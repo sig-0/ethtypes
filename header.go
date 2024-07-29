@@ -1,4 +1,4 @@
-package types
+package ethtypes
 
 type Header struct {
 	ParentHash       Hash

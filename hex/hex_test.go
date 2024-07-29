@@ -2,30 +2,14 @@ package hex
 
 import (
 	"bytes"
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"pgregory.net/rapid"
 )
 
-// TestHex_ToHexString verifies that the input
-// can be converted to a hex string
-func TestHex_ToHexString(t *testing.T) {
-	t.Parallel()
-
-	rapid.Check(t, func(t *rapid.T) {
-		str := ToHexString(
-			[]byte(
-				rapid.String().Draw(t, "random value"),
-			),
-		)
-
-		assert.Contains(t, str, Prefix)
-	})
-}
-
-// TestHex_ToHexString verifies that the input hex
-// can be converted to a byte representation
 func TestHex_FromHexString(t *testing.T) {
 	t.Parallel()
 
@@ -35,10 +19,37 @@ func TestHex_FromHexString(t *testing.T) {
 		)
 
 		decoded, err := FromHexString(ToHexString(original))
-		if err != nil {
-			t.Fatalf("unable to decode hex value, %v", err)
-		}
+		require.NoError(t, err)
 
 		assert.True(t, bytes.Equal(original, decoded))
+	})
+}
+
+func TestHex_FromUintToHex(t *testing.T) {
+	t.Parallel()
+
+	rapid.Check(t, func(t *rapid.T) {
+		original := rapid.Uint64().Draw(t, "random value")
+
+		decoded, err := DecodeHexToUint(FromUintToHex(original))
+		require.NoError(t, err)
+
+		assert.Equal(t, original, decoded)
+	})
+}
+
+func TestHex_FromBigToHex(t *testing.T) {
+	t.Parallel()
+
+	rapid.Check(t, func(t *rapid.T) {
+		var (
+			drawn    = rapid.Uint64().Draw(t, "random value")
+			original = big.NewInt(0).SetUint64(drawn)
+		)
+
+		decoded, err := DecodeHexToBig(FromBigToHex(original))
+		require.NoError(t, err)
+
+		assert.Equal(t, original.Bytes(), decoded.Bytes())
 	})
 }

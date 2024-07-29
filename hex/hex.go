@@ -2,14 +2,15 @@ package hex
 
 import (
 	"encoding/hex"
+	"errors"
 	"math/big"
 	"strconv"
 	"strings"
 )
 
-const (
-	Prefix = "0x"
-)
+var ErrInvalidHexString = errors.New("invalid hex string")
+
+const Prefix = "0x"
 
 // ToHexString converts the input data
 // to a hex string representation with the 0x prefix
@@ -28,23 +29,17 @@ func FromHexString(input string) ([]byte, error) {
 // FromUintToHex returns the hexadecimal representation of the
 // input uint (with the 0x prefix)
 func FromUintToHex(num uint64) string {
-	return "0x" + strconv.FormatUint(num, 16)
-}
-
-// FromByteToHex returns the hexadecimal representation of
-// the input byte
-func FromByteToHex(value byte) string {
-	return FromUintToHex(uint64(value))
+	return Prefix + strconv.FormatUint(num, 16)
 }
 
 // FromBigToHex returns the hexadecimal representation of the
 // input big.Int (with the 0x prefix)
 func FromBigToHex(num *big.Int) string {
 	if num == nil {
-		return "0x"
+		return Prefix
 	}
 
-	return "0x" + num.Text(16)
+	return Prefix + num.Text(16)
 }
 
 // DecodeHexToUint decodes the given hex number to a unit
@@ -56,6 +51,31 @@ func DecodeHexToUint(hex string) (uint64, error) {
 	)
 
 	return result, err
+}
+
+// DecodeHexToBig decodes the given hex big number to *big.Int.
+// Returns nil if hex is "0x"
+func DecodeHexToBig(hex string) (*big.Int, error) {
+	// Check if the value is valid
+	if hex == "" {
+		return nil, ErrInvalidHexString
+	}
+
+	// Check if the value is "empty"
+	if hex == Prefix {
+		return nil, nil //nolint:nilnil // Mimics encode functionality
+	}
+
+	// Parse the hex
+	result, success := big.NewInt(0).SetString(
+		strings.TrimPrefix(hex, Prefix),
+		16,
+	)
+	if !success {
+		return nil, ErrInvalidHexString
+	}
+
+	return result, nil
 }
 
 // DecodeString is a wrapper for the standard hex.Decode string

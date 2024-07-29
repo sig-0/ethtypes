@@ -1,4 +1,4 @@
-package types
+package ethtypes
 
 type AccessListEntry struct {
 	StorageKeys []Hash

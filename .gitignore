@@ -4,3 +4,6 @@
 # Editor Leftovers
 .vscode
 .idea
+
+# Testing leftovers
+testdata

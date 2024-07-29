@@ -1,4 +1,4 @@
-package types
+package ethtypes
 
 const (
 	bloomSize = 256 // Bytes

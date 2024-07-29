@@ -1,5 +1,5 @@
 //nolint:unused // Currently unused
-package types
+package ethtypes
 
 type Block struct {
 	header       *Header

@@ -1,4 +1,4 @@
-package types
+package ethtypes
 
 type Log struct {
 	Topics  []Hash

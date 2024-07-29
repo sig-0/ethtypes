@@ -1,4 +1,4 @@
-package types
+package ethtypes
 
 import (
 	"math/big"

@@ -1,4 +1,4 @@
-package types
+package ethtypes
 
 import "github.com/sig-0/ethtypes/hex"
 
