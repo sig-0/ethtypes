@@ -1,0 +1,35 @@
+version: 2
+updates:
+
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels:
+      - "github_actions"
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # Maintain dependencies for top level Go modules
+  - package-ecosystem: gomod
+    directory: /
+    target-branch: "main"
+    schedule:
+      interval: weekly
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 10
+    pull-request-branch-name:
+      separator: "-"
+    groups:
+      golang-x:
+        patterns:
+          - "golang.org/x/*"
+      everything-else:
+        patterns:
+          - "*"
+    reviewers:
+      - "zivkovicmilos"
