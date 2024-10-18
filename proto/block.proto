@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+option go_package = "./proto";
+
+import "tx.proto";
+
+// Represents a single Ethereum block
+message Block {
+  uint64 number = 1;                    // The block number (height of the block in the chain)
+  bytes miner = 2;                      // Address of the miner who produced this block
+  int64 timestamp = 3;                  // Timestamp when the block was mined
+  bytes receipts_root = 4;              // Root of the receipts trie (all transaction receipts for this block)
+  uint64 gas_used = 5;                  // Total gas used by all transactions in the block
+  uint64 gas_limit = 6;                 // Gas limit for the block
+  uint64 size = 7;                      // Size of the block in bytes
+  Transactions transactions = 8;        // List of transactions included in the block
+  bytes mix_hash = 9;                   // Hash used in the proof-of-work algorithm (before Ethereum 2.0)
+  bytes extra_data = 10;                // Extra data field, often used for miner-encoded information
+  bytes logs_bloom = 11;                // Bloom filter for quick searching of logs in the block
+  uint64 difficulty = 12;               // The difficulty of mining the block
+  bytes parent_hash = 13;               // Hash of the previous block (the parent block)
+  bytes state_root = 14;                // Root of the state trie (Ethereum state at the end of this block)
+  bytes transactions_root = 15;         // Root of the transactions trie (all transactions for this block)
+  bytes withdrawals_root = 16;          // Root of the withdrawals trie (for withdrawals from validators)
+  uint64 nonce = 17;                    // Random value used by the miner in proof-of-work (before Ethereum 2.0)
+  uint64 total_difficulty = 18;         // Total cumulative difficulty of the chain up to this block
+  bytes base_fee_per_gas = 19;          // Base fee per gas unit for EIP-1559 blocks
+  bytes sha3_uncles = 20;               // SHA3 hash of the uncles included in the block
+  repeated bytes uncles = 21;           // List of uncle block hashes included in this block
+  repeated Withdrawal withdrawals = 22; // List of withdrawals included in this block (for Ethereum 2.0)
+}
+
+// Represents a withdrawal from a validator in Ethereum 2.0
+message Withdrawal {
+  uint64 index = 1;           // Index of the withdrawal in the block
+  uint64 validator_index = 2; // Index of the validator performing the withdrawal
+  bytes recipient = 3;        // Address of the recipient of the withdrawal
+  uint64 amount = 4;          // Amount withdrawn (in Gwei)
+}

@@ -5,6 +5,7 @@ go 1.22
 require (
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.26.0
+	google.golang.org/protobuf v1.35.1
 	pgregory.net/rapid v1.1.0
 )
 

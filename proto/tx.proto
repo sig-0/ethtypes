@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+option go_package = "./proto";
+
+// Represents common fields shared by all transaction types
+message TransactionCommon {
+  uint64 type = 1;      // Transaction type (e.g., legacy, 1559, etc.)
+  uint64 nonce = 2;     // Unique identifier for each transaction from a specific account
+  bytes to = 3;         // The recipient address (optional)
+  uint64 gas = 4;       // The gas limit for the transaction
+  bytes value = 5;      // The amount of cryptocurrency sent in the transaction
+  bytes input = 6;      // Input data for contract interactions
+  uint64 chain_id = 7;  // Chain ID to prevent replay attacks across different networks
+  bytes r = 8;          // ECDSA signature component 'r'
+  bytes s = 9;          // ECDSA signature component 's'
+}
+
+// Represents a legacy transaction (pre-EIP-1559)
+message TransactionLegacy {
+  TransactionCommon transaction_common = 1;
+  bytes gas_price = 2;  // The gas price in the legacy transaction format
+  bytes v = 3;          // Signature 'v' component (determines chain or replay protection)
+}
+
+// Represents an EIP-1559 transaction with dynamic fees
+message Transaction1559 {
+  TransactionCommon transaction_common = 1; // Embeds common transaction fields
+  bytes max_priority_fee_per_gas = 2;       // Maximum tip a user is willing to pay to the miner
+  bytes max_fee_per_gas = 3;                // Maximum total fee per gas unit
+  bytes y_parity = 4;                       // Signature 'v' component in compressed form
+  repeated AccessListEntry access_list = 5;  // List of contract addresses and storage keys accessed
+}
+
+// Represents an EIP-2930 transaction (access list transaction)
+message Transaction2930 {
+  TransactionCommon transaction_common = 1; // Embeds common transaction fields
+  bytes gas_price = 2;                      // Gas price for this transaction
+  bytes y_parity = 3;                       // Signature 'v' component in compressed form
+  repeated AccessListEntry access_list = 4; // List of contract addresses and storage keys accessed
+}
+
+// Represents an entry in the access list, specifying a contract address and associated storage keys
+message AccessListEntry {
+  bytes address = 1;                // Contract address
+  repeated string storage_keys = 2; // Storage keys within the contract to access
+}
+
+// A collection of transactions
+message Transactions {
+  repeated TransactionWrapper transactions = 1;
+}
+
+// A wrapper message to allow different types of transactions in one field
+message TransactionWrapper {
+  oneof transaction_type {
+    TransactionLegacy tx_legacy = 1;  // Legacy transaction
+    Transaction1559 tx_1559 = 2;      // EIP-1559 transaction
+    Transaction2930 tx_2930 = 3;      // EIP-2930 transaction
+    string hash = 4;
+  }
+}
+
+// Represents an incoming transaction
+message IncomingTx {
+  bytes from = 1;       // The sender's Ethereum address
+  uint64 gas = 2;       // The gas limit for the transaction (optional)
+  bytes gas_price = 3;  // The gas price for the transaction (optional)
+  bytes value = 4;      // The amount of Ether to transfer (optional)
+  bytes data = 5;       // Transaction data (for contract interactions)
+  bytes to = 6;         // The recipient's Ethereum address
+}
