@@ -42,68 +42,68 @@ type Transaction struct {
 	hash atomic.Value
 }
 
-func (t *Transaction) GetType() byte {
+func (t *Transaction) Type() byte {
 	return t.inner.getType()
 }
 
-func (t *Transaction) GetNonce() uint64 {
+func (t *Transaction) Nonce() uint64 {
 	return t.inner.getNonce()
 }
 
-func (t *Transaction) GetGas() uint64 {
+func (t *Transaction) Gas() uint64 {
 	return t.inner.getGas()
 }
 
-// GetTo returns the To address of the transaction.
+// To returns the To address of the transaction.
 // If none is set (ex. contract deployment), it returns ZeroAddress
-func (t *Transaction) GetTo() Address {
+func (t *Transaction) To() Address {
 	return t.inner.getTo()
 }
 
-func (t *Transaction) GetValue() *big.Int {
+func (t *Transaction) Value() *big.Int {
 	return t.inner.getValue()
 }
 
-func (t *Transaction) GetChainID() uint64 {
+func (t *Transaction) ChainID() uint64 {
 	return t.inner.getChainID()
 }
 
 //nolint:nonamedreturns // Simpler this way
-func (t *Transaction) GetSigValues() (v, r, s *big.Int) {
+func (t *Transaction) SigValues() (v, r, s *big.Int) {
 	return t.inner.getSigValues()
 }
 
-func (t *Transaction) GetData() []byte {
+func (t *Transaction) Data() []byte {
 	return t.inner.getData()
 }
 
-func (t *Transaction) GetGasPrice() *big.Int {
+func (t *Transaction) GasPrice() *big.Int {
 	return t.inner.getGasPrice()
 }
 
-func (t *Transaction) GetAccessList() []*AccessListEntry {
+func (t *Transaction) AccessList() []*AccessListEntry {
 	return t.inner.getAccessList()
 }
 
-func (t *Transaction) GetMaxFeePerGas() *big.Int {
+func (t *Transaction) MaxFeePerGas() *big.Int {
 	return t.inner.getMaxFeePerGas()
 }
 
-func (t *Transaction) GetMaxPriorityFeePerGas() *big.Int {
+func (t *Transaction) MaxPriorityFeePerGas() *big.Int {
 	return t.inner.getMaxPriorityFeePerGas()
 }
 
 func (t *Transaction) Cost() *big.Int {
 	// (gas price * gas) + value
 	cost := big.NewInt(0).Mul(
-		t.GetGasPrice(),
-		big.NewInt(0).SetUint64(t.GetGas()),
+		t.GasPrice(),
+		big.NewInt(0).SetUint64(t.Gas()),
 	)
 
-	return big.NewInt(0).Add(cost, t.GetValue())
+	return big.NewInt(0).Add(cost, t.Value())
 }
 
-func (t *Transaction) GetHash() Hash {
+func (t *Transaction) Hash() Hash {
 	// Load the hash from the built-in type cache
 	// for quick lookup, if it's present
 	if hashRaw := t.hash.Load(); hashRaw != nil {
@@ -114,7 +114,7 @@ func (t *Transaction) GetHash() Hash {
 
 	// Calculate the hash based on the type
 	var hash Hash
-	if t.GetType() == TransactionLegacy {
+	if t.Type() == TransactionLegacy {
 		hash = getLegacyTransactionHash(t)
 	} else {
 		hash = getNonLegacyTransactionHash(t)
