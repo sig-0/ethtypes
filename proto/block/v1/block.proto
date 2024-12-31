@@ -1,8 +1,10 @@
 syntax = "proto3";
 
-option go_package = "./proto";
+package block.v1;
 
-import "tx.proto";
+option go_package = "github.com/sig-0/ethtypes/proto/block/v1;block";
+
+import "tx/v1/tx.proto";
 
 // Represents a single Ethereum block
 message Block {
@@ -13,7 +15,7 @@ message Block {
   uint64 gas_used = 5;                  // Total gas used by all transactions in the block
   uint64 gas_limit = 6;                 // Gas limit for the block
   uint64 size = 7;                      // Size of the block in bytes
-  Transactions transactions = 8;        // List of transactions included in the block
+  tx.v1.Transactions transactions = 8;  // List of transactions included in the block
   bytes mix_hash = 9;                   // Hash used in the proof-of-work algorithm (before Ethereum 2.0)
   bytes extra_data = 10;                // Extra data field, often used for miner-encoded information
   bytes logs_bloom = 11;                // Bloom filter for quick searching of logs in the block

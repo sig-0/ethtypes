@@ -1,6 +1,8 @@
 syntax = "proto3";
 
-option go_package = "./proto";
+package tx.v1;
+
+option go_package = "github.com/sig-0/ethtypes/proto/tx/v1;tx";
 
 // Represents common fields shared by all transaction types
 message TransactionCommon {

@@ -1,6 +1,8 @@
 syntax = "proto3";
 
-option go_package = "./proto";
+package receipt.v1;
+
+option go_package = "github.com/sig-0/ethtypes/proto/receipt/v1;receipt";
 
 // Represents a transaction receipt, which contains information about a transaction
 // after it has been processed and included in a block

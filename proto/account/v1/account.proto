@@ -1,6 +1,8 @@
 syntax = "proto3";
 
-option go_package = "./proto";
+package account.v1;
+
+option go_package = "github.com/sig-0/ethtypes/proto/account/v1;account";
 
 // Represents a single Ethereum account
 message Account {

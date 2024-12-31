@@ -1,0 +1,15 @@
+version: v2
+
+# Don't wipe the source folder.
+# The generated go files should go into the same
+# folder as the .proto definitions by this configuration,
+# so the root folder of the proto defs is not wiped
+clean: false
+
+plugins:
+  - local: protoc-gen-go
+    out: proto # generate file tree in the ./proto directory
+    opt: paths=source_relative
+
+inputs:
+  - directory: proto # recursively generate for the ./proto directory
