@@ -2,3 +2,4 @@ version: v2
 
 modules:
   - path: proto
+    name: buf.build/sig-0/ethtypes
