@@ -15,14 +15,14 @@ import (
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2930.md
 type TxEIP2930 struct {
 	ChainID    *big.Int   // the ID of the chain
-	Nonce      uint64     // the sender nonce
 	GasPrice   *big.Int   // the gas price of the tx
-	Gas        uint64     // the gas limit of the tx
-	To         *[]byte    // recipient address (nil means contract deployment)
 	Value      *big.Int   // value of the transfer (if any)
+	V, R, S    *big.Int   // the signature fields
+	To         *[]byte    // recipient address (nil means contract deployment)
 	Data       []byte     // data (payload) of the tx, if any
 	AccessList AccessList // the allowed access list of the tx, if any
-	V, R, S    *big.Int   // the signature fields
+	Nonce      uint64     // the sender nonce
+	Gas        uint64     // the gas limit of the tx
 }
 
 // FromRLP parses an EIP-2930 transaction from the transaction data RLP encoding.
@@ -316,6 +316,4 @@ func (tx *TxEIP2930) FromProto(protoTx *txProto.Transaction2930) {
 	if to != nil {
 		tx.To = &to
 	}
-
-	return
 }

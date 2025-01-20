@@ -32,29 +32,29 @@ func TestComputeLegacyTxHash(t *testing.T) {
 
 	testTable := []struct {
 		name         string
-		nonce        uint64
 		gasPrice     *big.Int
-		gasLimit     uint64
-		to           []byte
 		value        *big.Int
-		data         []byte
 		v            *big.Int
 		r            *big.Int
 		s            *big.Int
+		to           []byte
+		data         []byte
 		expectedHash []byte
+		nonce        uint64
+		gasLimit     uint64
 	}{
 		{
 			"EIP-155 example",
-			9,
 			big.NewInt(0).Mul(big.NewInt(20), big.NewInt(1000000000)),
-			21000,
-			decodeHex("3535353535353535353535353535353535353535"),
 			big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil),
-			[]byte{},
 			initBig("37"),
 			initBig("18515461264373351373200002665853028612451056578545711640558177340181847433846"),
 			initBig("46948507304638947509940763649030358759909902576025900602547168820602576006531"),
+			decodeHex("3535353535353535353535353535353535353535"),
+			[]byte{},
 			decodeHex("daf5a779ae972f972197303d7b574746c7ef83eadac0f2791ad23db92e4c8e53"),
+			9,
+			21000,
 		},
 	}
 

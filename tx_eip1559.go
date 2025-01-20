@@ -23,15 +23,15 @@ var (
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1559.md
 type TxEIP1559 struct {
 	ChainID              *big.Int   // the ID of the chain
-	Nonce                uint64     // the sender nonce
 	MaxPriorityFeePerGas *big.Int   // the max priority fee per gas
 	MaxFeePerGas         *big.Int   // the max fee per gas
-	Gas                  uint64     // the gas limit of the tx
-	To                   *[]byte    // recipient address (nil means contract deployment)
 	Value                *big.Int   // value of the transfer (if any)
+	YParity, R, S        *big.Int   // the signature fields
+	To                   *[]byte    // recipient address (nil means contract deployment)
 	Data                 []byte     // data (payload) of the tx, if any
 	AccessList           AccessList // the allowed access list for the tx, if any
-	YParity, R, S        *big.Int   // the signature fields
+	Nonce                uint64     // the sender nonce
+	Gas                  uint64     // the gas limit of the tx
 }
 
 // FromRLP parses an EIP-1559 transaction from the transaction data RLP encoding.
@@ -343,6 +343,4 @@ func (tx *TxEIP1559) FromProto(protoTx *txProto.Transaction1559) {
 	if to != nil {
 		tx.To = &to
 	}
-
-	return
 }

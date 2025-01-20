@@ -64,7 +64,7 @@ func (l *AccessList) FromRLPValues(listValues []ethrlp.Value) error {
 
 // ToRLP encodes the access list to RLP (RLP list)
 func (l AccessList) ToRLP() []byte {
-	var encodedEntries [][]byte
+	encodedEntries := make([][]byte, 0, len(l))
 
 	for _, entry := range l {
 		encodedEntries = append(
@@ -166,7 +166,7 @@ func (e *AccessListEntry) FromRLP(data []byte) error {
 
 // ToRLP encodes the single access list entry to RLP (RLP Bytes)
 func (e AccessListEntry) ToRLP() []byte {
-	var encodedStorageKeys [][]byte
+	encodedStorageKeys := make([][]byte, 0, len(e.StorageKeys))
 
 	for _, storageKey := range e.StorageKeys {
 		encodedStorageKeys = append(

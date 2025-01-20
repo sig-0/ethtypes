@@ -24,13 +24,13 @@ var (
 // TxLegacy represents the legacy transaction type
 // (pre EIP-2930, and pre EIP-1559)
 type TxLegacy struct {
-	Nonce    uint64   // the sender nonce
 	GasPrice *big.Int // the gas price of the tx
-	Gas      uint64   // the gas limit of the tx
-	To       *[]byte  // recipient address (nil means contract deployment)
 	Value    *big.Int // value of the transfer (if any)
-	Data     []byte   // data (payload) of the tx, if any
 	V, R, S  *big.Int // the signature fields
+	To       *[]byte  // recipient address (nil means contract deployment)
+	Data     []byte   // data (payload) of the tx, if any
+	Nonce    uint64   // the sender nonce
+	Gas      uint64   // the gas limit of the tx
 }
 
 // FromRLP parses a legacy transaction from the transaction data RLP encoding.
@@ -214,7 +214,7 @@ func (tx *TxLegacy) SignaturePayload() []byte {
 	// If so, chainID = (V - 35) / 2 or (V - 36) / 2
 	// (we just do int arithmetic to see if chainID > 0)
 	chainID := big.NewInt(0).Sub(tx.V, big35)
-	chainID.Div(chainID, big2) // floor((V-35)/2)
+	chainID.Div(chainID, big2) // this is floor((V-35)/2)
 
 	var rlpPayload [][]byte
 
@@ -299,6 +299,4 @@ func (tx *TxLegacy) FromProto(protoTx *txProto.TransactionLegacy) {
 	if to != nil {
 		tx.To = &to
 	}
-
-	return
 }
