@@ -6,9 +6,9 @@ import (
 )
 
 const (
-	TransactionLegacy = iota
-	Transaction1559
-	Transaction2930
+	TransactionLegacy = 0x00
+	Transaction2930   = 0x01
+	Transaction1559   = 0x02
 )
 
 type TransactionData interface {
