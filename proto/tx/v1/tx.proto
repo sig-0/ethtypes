@@ -6,14 +6,16 @@ option go_package = "github.com/sig-0/ethtypes/proto/tx/v1;tx";
 
 // Represents common fields shared by all transaction types
 message TransactionCommon {
-  uint64 nonce = 1;       // Unique identifier for each transaction from a specific account
-  optional bytes to = 2;  // The recipient address (optional)
-  uint64 gas = 3;         // The gas limit for the transaction
-  bytes value = 4;        // The amount of cryptocurrency sent in the transaction
-  bytes data = 5;         // Input data for contract interactions
-  bytes v = 6;            // ECDSA signature component 'v' (or y parity)
-  bytes r = 7;            // ECDSA signature component 'r'
-  bytes s = 8;            // ECDSA signature component 's'
+  bytes hash = 1;         // The transaction hash (calculated)
+  uint64 nonce = 2;       // Unique identifier for each transaction from a specific account
+  bytes from = 3;         // The transaction signer (sender)
+  optional bytes to = 4;  // The recipient address (optional)
+  uint64 gas = 5;         // The gas limit for the transaction
+  bytes value = 6;        // The amount of cryptocurrency sent in the transaction
+  bytes data = 7;         // Input data for contract interactions
+  bytes v = 8;            // ECDSA signature component 'v' (or y parity)
+  bytes r = 9;            // ECDSA signature component 'r'
+  bytes s = 10;           // ECDSA signature component 's'
 }
 
 // Represents a legacy transaction (pre-EIP-1559)
@@ -58,14 +60,4 @@ message TransactionWrapper {
     Transaction2930 tx_2930 = 3;      // EIP-2930 transaction
     string hash = 4;
   }
-}
-
-// Represents an incoming transaction
-message IncomingTx {
-  bytes from = 1;       // The sender's Ethereum address
-  uint64 gas = 2;       // The gas limit for the transaction (optional)
-  bytes gas_price = 3;  // The gas price for the transaction (optional)
-  bytes value = 4;      // The amount of Ether to transfer (optional)
-  bytes data = 5;       // Transaction data (for contract interactions)
-  bytes to = 6;         // The recipient's Ethereum address
 }

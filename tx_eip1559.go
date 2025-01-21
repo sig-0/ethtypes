@@ -7,7 +7,6 @@ import (
 
 	"github.com/sig-0/ethrlp"
 	"github.com/sig-0/ethtypes/keccak"
-	txProto "github.com/sig-0/ethtypes/proto/tx/v1"
 )
 
 var (
@@ -293,54 +292,4 @@ func (tx *TxEIP1559) SignaturePayload() []byte {
 	// This keccak output is what's actually being
 	// signed by the private key (this is the sign data)
 	return keccak.New().Hash(rlpEncoding)
-}
-
-// ToProto converts an EIP-1559 transaction to the proto format
-func (tx *TxEIP1559) ToProto() *txProto.Transaction1559 {
-	protoTx := &txProto.Transaction1559{
-		TransactionCommon: &txProto.TransactionCommon{
-			Nonce: tx.Nonce,
-			Gas:   tx.Gas,
-			Value: tx.Value.Bytes(),
-			Data:  tx.Data,
-			V:     tx.YParity.Bytes(),
-			R:     tx.R.Bytes(),
-			S:     tx.S.Bytes(),
-		},
-		Type:                 Transaction1559,
-		MaxPriorityFeePerGas: tx.MaxPriorityFeePerGas.Bytes(),
-		MaxFeePerGas:         tx.MaxFeePerGas.Bytes(),
-		AccessList:           tx.AccessList.ToProto(),
-	}
-
-	// Check if the recipient address is set.
-	// If not, it means the transaction is a contract deployment
-	if tx.To != nil {
-		protoTx.TransactionCommon.To = *tx.To
-	}
-
-	return protoTx
-}
-
-// FromProto converts the EIP-1559 tx proto format to an EIP-1559 transaction
-func (tx *TxEIP1559) FromProto(protoTx *txProto.Transaction1559) {
-	tx.Nonce = protoTx.TransactionCommon.GetNonce()
-	tx.Gas = protoTx.TransactionCommon.GetGas()
-	tx.Value = big.NewInt(0).SetBytes(protoTx.TransactionCommon.GetValue())
-	tx.Data = protoTx.TransactionCommon.GetData()
-	tx.YParity = big.NewInt(0).SetBytes(protoTx.TransactionCommon.GetV())
-	tx.R = big.NewInt(0).SetBytes(protoTx.TransactionCommon.GetR())
-	tx.S = big.NewInt(0).SetBytes(protoTx.TransactionCommon.GetS())
-	tx.MaxPriorityFeePerGas = big.NewInt(0).SetBytes(protoTx.GetMaxPriorityFeePerGas())
-	tx.MaxFeePerGas = big.NewInt(0).SetBytes(protoTx.GetMaxFeePerGas())
-
-	accessList := make(AccessList, 0, len(protoTx.AccessList))
-	accessList.FromProto(protoTx.AccessList)
-
-	tx.AccessList = accessList
-
-	to := protoTx.TransactionCommon.GetTo()
-	if to != nil {
-		tx.To = &to
-	}
 }

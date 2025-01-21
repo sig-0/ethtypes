@@ -7,7 +7,6 @@ import (
 
 	"github.com/sig-0/ethrlp"
 	"github.com/sig-0/ethtypes/keccak"
-	txProto "github.com/sig-0/ethtypes/proto/tx/v1"
 )
 
 // TxEIP2930 represents an access list transaction,
@@ -268,52 +267,4 @@ func (tx *TxEIP2930) SignaturePayload() []byte {
 	// This keccak output is what's actually being
 	// signed by the private key (this is the sign data)
 	return keccak.New().Hash(rlpEncoding)
-}
-
-// ToProto converts an EIP-2930 transaction to the proto format
-func (tx *TxEIP2930) ToProto() *txProto.Transaction2930 {
-	protoTx := &txProto.Transaction2930{
-		TransactionCommon: &txProto.TransactionCommon{
-			Nonce: tx.Nonce,
-			Gas:   tx.Gas,
-			Value: tx.Value.Bytes(),
-			Data:  tx.Data,
-			V:     tx.V.Bytes(),
-			R:     tx.R.Bytes(),
-			S:     tx.S.Bytes(),
-		},
-		Type:       Transaction1559,
-		GasPrice:   tx.GasPrice.Bytes(),
-		AccessList: tx.AccessList.ToProto(),
-	}
-
-	// Check if the recipient address is set.
-	// If not, it means the transaction is a contract deployment
-	if tx.To != nil {
-		protoTx.TransactionCommon.To = *tx.To
-	}
-
-	return protoTx
-}
-
-// FromProto converts the EIP-2930 tx proto format to an EIP-1559 transaction
-func (tx *TxEIP2930) FromProto(protoTx *txProto.Transaction2930) {
-	tx.Nonce = protoTx.TransactionCommon.GetNonce()
-	tx.Gas = protoTx.TransactionCommon.GetGas()
-	tx.Value = big.NewInt(0).SetBytes(protoTx.TransactionCommon.GetValue())
-	tx.Data = protoTx.TransactionCommon.GetData()
-	tx.V = big.NewInt(0).SetBytes(protoTx.TransactionCommon.GetV())
-	tx.R = big.NewInt(0).SetBytes(protoTx.TransactionCommon.GetR())
-	tx.S = big.NewInt(0).SetBytes(protoTx.TransactionCommon.GetS())
-	tx.GasPrice = big.NewInt(0).SetBytes(protoTx.GetGasPrice())
-
-	accessList := make(AccessList, 0, len(protoTx.AccessList))
-	accessList.FromProto(protoTx.AccessList)
-
-	tx.AccessList = accessList
-
-	to := protoTx.TransactionCommon.GetTo()
-	if to != nil {
-		tx.To = &to
-	}
 }
