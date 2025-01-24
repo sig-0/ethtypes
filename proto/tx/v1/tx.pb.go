@@ -31,7 +31,7 @@ type TransactionCommon struct {
 	From  []byte `protobuf:"bytes,3,opt,name=from,proto3" json:"from,omitempty"`    // The transaction signer (sender)
 	To    []byte `protobuf:"bytes,4,opt,name=to,proto3,oneof" json:"to,omitempty"`  // The recipient address (optional)
 	Gas   uint64 `protobuf:"varint,5,opt,name=gas,proto3" json:"gas,omitempty"`     // The gas limit for the transaction
-	Value []byte `protobuf:"bytes,6,opt,name=value,proto3" json:"value,omitempty"`  // The amount of cryptocurrency sent in the transaction
+	Value []byte `protobuf:"bytes,6,opt,name=value,proto3" json:"value,omitempty"`  // The amount of wei sent in the transaction
 	Data  []byte `protobuf:"bytes,7,opt,name=data,proto3" json:"data,omitempty"`    // Input data for contract interactions
 	V     []byte `protobuf:"bytes,8,opt,name=v,proto3" json:"v,omitempty"`          // ECDSA signature component 'v' (or y parity)
 	R     []byte `protobuf:"bytes,9,opt,name=r,proto3" json:"r,omitempty"`          // ECDSA signature component 'r'
@@ -562,6 +562,124 @@ func (*TransactionWrapper_Tx_2930) isTransactionWrapper_TransactionType() {}
 
 func (*TransactionWrapper_Hash) isTransactionWrapper_TransactionType() {}
 
+// Represents a standard "call" transaction object, usually
+// as a result of eth_call, eth_estimateGas and others.
+//
+// This is NOT the same transaction format as with signed transactions,
+// seen in eth_sendRawTransaction, which follow a stricter standard.
+// The users of this type will need to "guess" the transaction type,
+// whether it's Legacy, EIP-1559, EIP-2930, or others, based on the set fields
+type CallTx struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	To                   []byte             `protobuf:"bytes,1,opt,name=to,proto3" json:"to,omitempty"`                                                                             // destination address (required)
+	From                 []byte             `protobuf:"bytes,2,opt,name=from,proto3,oneof" json:"from,omitempty"`                                                                   // tx originator
+	Gas                  *uint64            `protobuf:"varint,3,opt,name=gas,proto3,oneof" json:"gas,omitempty"`                                                                    // gas limit for the transaction
+	GasPrice             []byte             `protobuf:"bytes,4,opt,name=gas_price,json=gasPrice,proto3,oneof" json:"gas_price,omitempty"`                                           // gas price of the tx (used for pre-EIP-1559 txs)
+	MaxFeePerGas         []byte             `protobuf:"bytes,5,opt,name=max_fee_per_gas,json=maxFeePerGas,proto3,oneof" json:"max_fee_per_gas,omitempty"`                           // max fee per gas unit (used for post-EIP-1559 txs)
+	MaxPriorityFeePerGas []byte             `protobuf:"bytes,6,opt,name=max_priority_fee_per_gas,json=maxPriorityFeePerGas,proto3,oneof" json:"max_priority_fee_per_gas,omitempty"` // max priority fee per gas (used for post-EIP-1559 txs)
+	Value                []byte             `protobuf:"bytes,7,opt,name=value,proto3,oneof" json:"value,omitempty"`                                                                 // value in wei being transferred
+	Data                 []byte             `protobuf:"bytes,8,opt,name=data,proto3,oneof" json:"data,omitempty"`                                                                   // execution data of the call, if any
+	AccessList           []*AccessListEntry `protobuf:"bytes,9,rep,name=access_list,json=accessList,proto3" json:"access_list,omitempty"`                                           // access list associated with the tx (used for EIP-2930 txs)
+}
+
+func (x *CallTx) Reset() {
+	*x = CallTx{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_tx_v1_tx_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *CallTx) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CallTx) ProtoMessage() {}
+
+func (x *CallTx) ProtoReflect() protoreflect.Message {
+	mi := &file_tx_v1_tx_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CallTx.ProtoReflect.Descriptor instead.
+func (*CallTx) Descriptor() ([]byte, []int) {
+	return file_tx_v1_tx_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *CallTx) GetTo() []byte {
+	if x != nil {
+		return x.To
+	}
+	return nil
+}
+
+func (x *CallTx) GetFrom() []byte {
+	if x != nil {
+		return x.From
+	}
+	return nil
+}
+
+func (x *CallTx) GetGas() uint64 {
+	if x != nil && x.Gas != nil {
+		return *x.Gas
+	}
+	return 0
+}
+
+func (x *CallTx) GetGasPrice() []byte {
+	if x != nil {
+		return x.GasPrice
+	}
+	return nil
+}
+
+func (x *CallTx) GetMaxFeePerGas() []byte {
+	if x != nil {
+		return x.MaxFeePerGas
+	}
+	return nil
+}
+
+func (x *CallTx) GetMaxPriorityFeePerGas() []byte {
+	if x != nil {
+		return x.MaxPriorityFeePerGas
+	}
+	return nil
+}
+
+func (x *CallTx) GetValue() []byte {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+func (x *CallTx) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *CallTx) GetAccessList() []*AccessListEntry {
+	if x != nil {
+		return x.AccessList
+	}
+	return nil
+}
+
 var File_tx_v1_tx_proto protoreflect.FileDescriptor
 
 var file_tx_v1_tx_proto_rawDesc = []byte{
@@ -640,10 +758,37 @@ var file_tx_v1_tx_proto_rawDesc = []byte{
 	0x39, 0x33, 0x30, 0x48, 0x00, 0x52, 0x06, 0x74, 0x78, 0x32, 0x39, 0x33, 0x30, 0x12, 0x14, 0x0a,
 	0x04, 0x68, 0x61, 0x73, 0x68, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x04, 0x68,
 	0x61, 0x73, 0x68, 0x42, 0x12, 0x0a, 0x10, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x42, 0x2a, 0x5a, 0x28, 0x67, 0x69, 0x74, 0x68, 0x75,
-	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x69, 0x67, 0x2d, 0x30, 0x2f, 0x65, 0x74, 0x68, 0x74,
-	0x79, 0x70, 0x65, 0x73, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x74, 0x78, 0x2f, 0x76, 0x31,
-	0x3b, 0x74, 0x78, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6f, 0x6e, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x22, 0xa3, 0x03, 0x0a, 0x06, 0x43, 0x61, 0x6c, 0x6c,
+	0x54, 0x78, 0x12, 0x0e, 0x0a, 0x02, 0x74, 0x6f, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x02,
+	0x74, 0x6f, 0x12, 0x17, 0x0a, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c,
+	0x48, 0x00, 0x52, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x15, 0x0a, 0x03, 0x67,
+	0x61, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x48, 0x01, 0x52, 0x03, 0x67, 0x61, 0x73, 0x88,
+	0x01, 0x01, 0x12, 0x20, 0x0a, 0x09, 0x67, 0x61, 0x73, 0x5f, 0x70, 0x72, 0x69, 0x63, 0x65, 0x18,
+	0x04, 0x20, 0x01, 0x28, 0x0c, 0x48, 0x02, 0x52, 0x08, 0x67, 0x61, 0x73, 0x50, 0x72, 0x69, 0x63,
+	0x65, 0x88, 0x01, 0x01, 0x12, 0x2a, 0x0a, 0x0f, 0x6d, 0x61, 0x78, 0x5f, 0x66, 0x65, 0x65, 0x5f,
+	0x70, 0x65, 0x72, 0x5f, 0x67, 0x61, 0x73, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0c, 0x48, 0x03, 0x52,
+	0x0c, 0x6d, 0x61, 0x78, 0x46, 0x65, 0x65, 0x50, 0x65, 0x72, 0x47, 0x61, 0x73, 0x88, 0x01, 0x01,
+	0x12, 0x3b, 0x0a, 0x18, 0x6d, 0x61, 0x78, 0x5f, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79,
+	0x5f, 0x66, 0x65, 0x65, 0x5f, 0x70, 0x65, 0x72, 0x5f, 0x67, 0x61, 0x73, 0x18, 0x06, 0x20, 0x01,
+	0x28, 0x0c, 0x48, 0x04, 0x52, 0x14, 0x6d, 0x61, 0x78, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74,
+	0x79, 0x46, 0x65, 0x65, 0x50, 0x65, 0x72, 0x47, 0x61, 0x73, 0x88, 0x01, 0x01, 0x12, 0x19, 0x0a,
+	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0c, 0x48, 0x05, 0x52, 0x05,
+	0x76, 0x61, 0x6c, 0x75, 0x65, 0x88, 0x01, 0x01, 0x12, 0x17, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61,
+	0x18, 0x08, 0x20, 0x01, 0x28, 0x0c, 0x48, 0x06, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x88, 0x01,
+	0x01, 0x12, 0x37, 0x0a, 0x0b, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x5f, 0x6c, 0x69, 0x73, 0x74,
+	0x18, 0x09, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x74, 0x78, 0x2e, 0x76, 0x31, 0x2e, 0x41,
+	0x63, 0x63, 0x65, 0x73, 0x73, 0x4c, 0x69, 0x73, 0x74, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x0a,
+	0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x4c, 0x69, 0x73, 0x74, 0x42, 0x07, 0x0a, 0x05, 0x5f, 0x66,
+	0x72, 0x6f, 0x6d, 0x42, 0x06, 0x0a, 0x04, 0x5f, 0x67, 0x61, 0x73, 0x42, 0x0c, 0x0a, 0x0a, 0x5f,
+	0x67, 0x61, 0x73, 0x5f, 0x70, 0x72, 0x69, 0x63, 0x65, 0x42, 0x12, 0x0a, 0x10, 0x5f, 0x6d, 0x61,
+	0x78, 0x5f, 0x66, 0x65, 0x65, 0x5f, 0x70, 0x65, 0x72, 0x5f, 0x67, 0x61, 0x73, 0x42, 0x1b, 0x0a,
+	0x19, 0x5f, 0x6d, 0x61, 0x78, 0x5f, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x5f, 0x66,
+	0x65, 0x65, 0x5f, 0x70, 0x65, 0x72, 0x5f, 0x67, 0x61, 0x73, 0x42, 0x08, 0x0a, 0x06, 0x5f, 0x76,
+	0x61, 0x6c, 0x75, 0x65, 0x42, 0x07, 0x0a, 0x05, 0x5f, 0x64, 0x61, 0x74, 0x61, 0x42, 0x2a, 0x5a,
+	0x28, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x69, 0x67, 0x2d,
+	0x30, 0x2f, 0x65, 0x74, 0x68, 0x74, 0x79, 0x70, 0x65, 0x73, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x2f, 0x74, 0x78, 0x2f, 0x76, 0x31, 0x3b, 0x74, 0x78, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -658,7 +803,7 @@ func file_tx_v1_tx_proto_rawDescGZIP() []byte {
 	return file_tx_v1_tx_proto_rawDescData
 }
 
-var file_tx_v1_tx_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_tx_v1_tx_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_tx_v1_tx_proto_goTypes = []interface{}{
 	(*TransactionCommon)(nil),  // 0: tx.v1.TransactionCommon
 	(*TransactionLegacy)(nil),  // 1: tx.v1.TransactionLegacy
@@ -667,22 +812,24 @@ var file_tx_v1_tx_proto_goTypes = []interface{}{
 	(*AccessListEntry)(nil),    // 4: tx.v1.AccessListEntry
 	(*Transactions)(nil),       // 5: tx.v1.Transactions
 	(*TransactionWrapper)(nil), // 6: tx.v1.TransactionWrapper
+	(*CallTx)(nil),             // 7: tx.v1.CallTx
 }
 var file_tx_v1_tx_proto_depIdxs = []int32{
-	0, // 0: tx.v1.TransactionLegacy.transaction_common:type_name -> tx.v1.TransactionCommon
-	0, // 1: tx.v1.Transaction1559.transaction_common:type_name -> tx.v1.TransactionCommon
-	4, // 2: tx.v1.Transaction1559.access_list:type_name -> tx.v1.AccessListEntry
-	0, // 3: tx.v1.Transaction2930.transaction_common:type_name -> tx.v1.TransactionCommon
-	4, // 4: tx.v1.Transaction2930.access_list:type_name -> tx.v1.AccessListEntry
-	6, // 5: tx.v1.Transactions.transactions:type_name -> tx.v1.TransactionWrapper
-	1, // 6: tx.v1.TransactionWrapper.tx_legacy:type_name -> tx.v1.TransactionLegacy
-	2, // 7: tx.v1.TransactionWrapper.tx_1559:type_name -> tx.v1.Transaction1559
-	3, // 8: tx.v1.TransactionWrapper.tx_2930:type_name -> tx.v1.Transaction2930
-	9, // [9:9] is the sub-list for method output_type
-	9, // [9:9] is the sub-list for method input_type
-	9, // [9:9] is the sub-list for extension type_name
-	9, // [9:9] is the sub-list for extension extendee
-	0, // [0:9] is the sub-list for field type_name
+	0,  // 0: tx.v1.TransactionLegacy.transaction_common:type_name -> tx.v1.TransactionCommon
+	0,  // 1: tx.v1.Transaction1559.transaction_common:type_name -> tx.v1.TransactionCommon
+	4,  // 2: tx.v1.Transaction1559.access_list:type_name -> tx.v1.AccessListEntry
+	0,  // 3: tx.v1.Transaction2930.transaction_common:type_name -> tx.v1.TransactionCommon
+	4,  // 4: tx.v1.Transaction2930.access_list:type_name -> tx.v1.AccessListEntry
+	6,  // 5: tx.v1.Transactions.transactions:type_name -> tx.v1.TransactionWrapper
+	1,  // 6: tx.v1.TransactionWrapper.tx_legacy:type_name -> tx.v1.TransactionLegacy
+	2,  // 7: tx.v1.TransactionWrapper.tx_1559:type_name -> tx.v1.Transaction1559
+	3,  // 8: tx.v1.TransactionWrapper.tx_2930:type_name -> tx.v1.Transaction2930
+	4,  // 9: tx.v1.CallTx.access_list:type_name -> tx.v1.AccessListEntry
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_tx_v1_tx_proto_init() }
@@ -775,6 +922,18 @@ func file_tx_v1_tx_proto_init() {
 				return nil
 			}
 		}
+		file_tx_v1_tx_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CallTx); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	file_tx_v1_tx_proto_msgTypes[0].OneofWrappers = []interface{}{}
 	file_tx_v1_tx_proto_msgTypes[6].OneofWrappers = []interface{}{
@@ -783,13 +942,14 @@ func file_tx_v1_tx_proto_init() {
 		(*TransactionWrapper_Tx_2930)(nil),
 		(*TransactionWrapper_Hash)(nil),
 	}
+	file_tx_v1_tx_proto_msgTypes[7].OneofWrappers = []interface{}{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_tx_v1_tx_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

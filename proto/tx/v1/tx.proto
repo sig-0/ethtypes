@@ -11,7 +11,7 @@ message TransactionCommon {
   bytes from = 3;         // The transaction signer (sender)
   optional bytes to = 4;  // The recipient address (optional)
   uint64 gas = 5;         // The gas limit for the transaction
-  bytes value = 6;        // The amount of cryptocurrency sent in the transaction
+  bytes value = 6;        // The amount of wei sent in the transaction
   bytes data = 7;         // Input data for contract interactions
   bytes v = 8;            // ECDSA signature component 'v' (or y parity)
   bytes r = 9;            // ECDSA signature component 'r'
@@ -60,4 +60,23 @@ message TransactionWrapper {
     Transaction2930 tx_2930 = 3;      // EIP-2930 transaction
     string hash = 4;
   }
+}
+
+// Represents a standard "call" transaction object, usually
+// as a result of eth_call, eth_estimateGas and others.
+//
+// This is NOT the same transaction format as with signed transactions,
+// seen in eth_sendRawTransaction, which follow a stricter standard.
+// The users of this type will need to "guess" the transaction type,
+// whether it's Legacy, EIP-1559, EIP-2930, or others, based on the set fields
+message CallTx {
+  bytes to = 1;                                 // destination address (required)
+  optional bytes from = 2;                      // tx originator
+  optional uint64 gas = 3;                      // gas limit for the transaction
+  optional bytes gas_price = 4;                 // gas price of the tx (used for pre-EIP-1559 txs)
+  optional bytes max_fee_per_gas = 5;           // max fee per gas unit (used for post-EIP-1559 txs)
+  optional bytes max_priority_fee_per_gas = 6;  // max priority fee per gas (used for post-EIP-1559 txs)
+  optional bytes value = 7;                     // value in wei being transferred
+  optional bytes data = 8;                      // execution data of the call, if any
+  repeated AccessListEntry access_list = 9;     // access list associated with the tx (used for EIP-2930 txs)
 }

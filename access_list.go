@@ -14,8 +14,8 @@ type AccessList []AccessListEntry
 // AccessListEntry is a single access list entry,
 // denoting the accessed storage keys (hashes) and address
 type AccessListEntry struct {
-	StorageKeys []Hash
-	Address     Address
+	StorageKeys []Hash  `json:"storageKeys"`
+	Address     Address `json:"address"`
 }
 
 // FromRLP parses the RLP encoding of an access list
