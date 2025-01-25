@@ -71,6 +71,7 @@ func (tx *TxLegacy) getChainID() *big.Int {
 	)
 }
 
+//nolint:nonamedreturns // Simpler this way
 func (tx *TxLegacy) getSigValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
 }

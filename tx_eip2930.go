@@ -48,6 +48,7 @@ func (tx *TxEIP2930) getChainID() *big.Int {
 	return tx.ChainID
 }
 
+//nolint:nonamedreturns // Simpler this way
 func (tx *TxEIP2930) getSigValues() (yParity, r, s *big.Int) {
 	return tx.YParity, tx.R, tx.S
 }

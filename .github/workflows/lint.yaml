@@ -5,6 +5,8 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: github.com/sig-0/*
     steps:
       - name: Install Go
         uses: actions/setup-go@v5
@@ -13,6 +15,10 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Allow access to sig-0 private repos
+        run: |
+          git config --global url."https://${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
       - name: Lint
         uses: golangci/golangci-lint-action@v6
