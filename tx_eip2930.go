@@ -13,15 +13,67 @@ import (
 // introduced as part of EIP-2930
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2930.md
 type TxEIP2930 struct {
-	ChainID    *big.Int   // the ID of the chain
-	GasPrice   *big.Int   // the gas price of the tx
-	Value      *big.Int   // value of the transfer (if any)
-	V, R, S    *big.Int   // the signature fields
-	To         *[]byte    // recipient address (nil means contract deployment)
-	Data       []byte     // data (payload) of the tx, if any
-	AccessList AccessList // the allowed access list of the tx, if any
-	Nonce      uint64     // the sender nonce
-	Gas        uint64     // the gas limit of the tx
+	ChainID       *big.Int   // the ID of the chain
+	GasPrice      *big.Int   // the gas price of the tx
+	Value         *big.Int   // value of the transfer (if any)
+	YParity, R, S *big.Int   // the signature fields (y parity is {0, 1})
+	To            *Address   // recipient address (nil means contract deployment)
+	Data          []byte     // data (payload) of the tx, if any
+	AccessList    AccessList // the allowed access list of the tx, if any
+	Nonce         uint64     // the sender nonce
+	Gas           uint64     // the gas limit of the tx
+}
+
+func (tx *TxEIP2930) getType() byte {
+	return Transaction2930
+}
+
+func (tx *TxEIP2930) getNonce() uint64 {
+	return tx.Nonce
+}
+
+func (tx *TxEIP2930) getGas() uint64 {
+	return tx.Gas
+}
+
+func (tx *TxEIP2930) getTo() *Address {
+	return tx.To
+}
+
+func (tx *TxEIP2930) getValue() *big.Int {
+	return tx.Value
+}
+
+func (tx *TxEIP2930) getChainID() *big.Int {
+	return tx.ChainID
+}
+
+func (tx *TxEIP2930) getSigValues() (yParity, r, s *big.Int) {
+	return tx.YParity, tx.R, tx.S
+}
+
+func (tx *TxEIP2930) getData() []byte {
+	return tx.Data
+}
+
+func (tx *TxEIP2930) getGasPrice() *big.Int {
+	return tx.GasPrice
+}
+
+func (tx *TxEIP2930) getMaxFeePerGas() *big.Int {
+	return tx.GasPrice
+}
+
+func (tx *TxEIP2930) getMaxPriorityFeePerGas() *big.Int {
+	return tx.GasPrice
+}
+
+func (tx *TxEIP2930) getAccessList() AccessList {
+	return tx.AccessList
+}
+
+func (tx *TxEIP2930) getHash() Hash {
+	return BytesToHash(tx.SignaturePayload())
 }
 
 // FromRLP parses an EIP-2930 transaction from the transaction data RLP encoding.
@@ -119,7 +171,9 @@ func (tx *TxEIP2930) FromRLP(txData []byte) error {
 
 	if toRaw := listValues[4].GetValue(); toRaw != nil {
 		to, _ := toRaw.([]byte)
-		tx.To = &to
+		address := BytesToAddress(to)
+
+		tx.To = &address
 	}
 
 	// Decode the value
@@ -182,12 +236,12 @@ func (tx *TxEIP2930) FromRLP(txData []byte) error {
 		)
 	}
 
-	vRaw, ok := listValues[8].GetValue().([]byte)
-	if !ok || vRaw == nil {
-		return errors.New("invalid v sig param RLP encoding")
+	yParityRaw, ok := listValues[8].GetValue().([]byte)
+	if !ok || yParityRaw == nil {
+		return errors.New("invalid y parity sig param RLP encoding")
 	}
 
-	tx.V = big.NewInt(0).SetBytes(vRaw)
+	tx.YParity = big.NewInt(0).SetBytes(yParityRaw)
 
 	// Decode the r sig param
 	if listValues[9].GetType() != ethrlp.Bytes {
@@ -236,7 +290,7 @@ func (tx *TxEIP2930) SignaturePayload() []byte {
 
 	var toAddress []byte
 	if tx.To != nil {
-		toAddress = *tx.To
+		toAddress = tx.To.ToBytes()
 	}
 
 	// Encode the access list

@@ -25,12 +25,64 @@ type TxEIP1559 struct {
 	MaxPriorityFeePerGas *big.Int   // the max priority fee per gas
 	MaxFeePerGas         *big.Int   // the max fee per gas
 	Value                *big.Int   // value of the transfer (if any)
-	YParity, R, S        *big.Int   // the signature fields
-	To                   *[]byte    // recipient address (nil means contract deployment)
+	YParity, R, S        *big.Int   // the signature fields (y parity is {0, 1})
+	To                   *Address   // recipient address (nil means contract deployment)
 	Data                 []byte     // data (payload) of the tx, if any
 	AccessList           AccessList // the allowed access list for the tx, if any
 	Nonce                uint64     // the sender nonce
 	Gas                  uint64     // the gas limit of the tx
+}
+
+func (tx *TxEIP1559) getType() byte {
+	return Transaction1559
+}
+
+func (tx *TxEIP1559) getNonce() uint64 {
+	return tx.Nonce
+}
+
+func (tx *TxEIP1559) getGas() uint64 {
+	return tx.Gas
+}
+
+func (tx *TxEIP1559) getTo() *Address {
+	return tx.To
+}
+
+func (tx *TxEIP1559) getValue() *big.Int {
+	return tx.Value
+}
+
+func (tx *TxEIP1559) getChainID() *big.Int {
+	return tx.ChainID
+}
+
+func (tx *TxEIP1559) getSigValues() (yParity, r, s *big.Int) {
+	return tx.YParity, tx.R, tx.S
+}
+
+func (tx *TxEIP1559) getData() []byte {
+	return tx.Data
+}
+
+func (tx *TxEIP1559) getGasPrice() *big.Int {
+	return tx.MaxFeePerGas // return the max fee per gas
+}
+
+func (tx *TxEIP1559) getMaxFeePerGas() *big.Int {
+	return tx.MaxFeePerGas
+}
+
+func (tx *TxEIP1559) getMaxPriorityFeePerGas() *big.Int {
+	return tx.MaxPriorityFeePerGas
+}
+
+func (tx *TxEIP1559) getAccessList() AccessList {
+	return tx.AccessList
+}
+
+func (tx *TxEIP1559) getHash() Hash {
+	return BytesToHash(tx.SignaturePayload())
 }
 
 // FromRLP parses an EIP-1559 transaction from the transaction data RLP encoding.
@@ -143,7 +195,9 @@ func (tx *TxEIP1559) FromRLP(txData []byte) error {
 
 	if toRaw := listValues[5].GetValue(); toRaw != nil {
 		to, _ := toRaw.([]byte)
-		tx.To = &to
+		address := BytesToAddress(to)
+
+		tx.To = &address
 	}
 
 	// Decode the value
@@ -260,7 +314,7 @@ func (tx *TxEIP1559) SignaturePayload() []byte {
 
 	var toAddress []byte
 	if tx.To != nil {
-		toAddress = *tx.To
+		toAddress = tx.To.ToBytes()
 	}
 
 	// Encode the access list

@@ -31,6 +31,7 @@ message Transaction1559 {
   bytes max_priority_fee_per_gas = 3;         // Maximum tip a user is willing to pay to the miner
   bytes max_fee_per_gas = 4;                  // Maximum total fee per gas unit
   repeated AccessListEntry access_list = 5;   // List of contract addresses and storage keys accessed
+  bytes chain_id = 6;                         // The chain ID of the transaction, if any
 }
 
 // Represents an EIP-2930 transaction (access list transaction)
@@ -39,6 +40,7 @@ message Transaction2930 {
   uint64 type = 2;                          // Transaction type (e.g., legacy, 1559, etc.)
   bytes gas_price = 3;                      // Gas price for this transaction
   repeated AccessListEntry access_list = 4; // List of contract addresses and storage keys accessed
+  bytes chain_id = 5;                       // The chain ID of the transaction, if any
 }
 
 // Represents an entry in the access list, specifying a contract address and associated storage keys

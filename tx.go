@@ -1,8 +1,11 @@
 package ethtypes
 
 import (
+	"fmt"
 	"math/big"
 	"sync/atomic"
+
+	"github.com/sig-0/ethcrypto/secp256k1"
 )
 
 const (
@@ -11,35 +14,68 @@ const (
 	Transaction1559   = 0x02
 )
 
-type TransactionData interface {
+// transactionData is the wrapper for specific transaction types
+// such as legacy, EIP-1559 and EIP-2930
+type transactionData interface {
 	// Common transaction types //
 
+	// getType returns the transaction type
 	getType() byte
+
+	// getNonce returns the sender tx nonce
 	getNonce() uint64
+
+	// getGas returns the tx gas limit
 	getGas() uint64
-	getTo() Address
+
+	// getTo returns the destination address (must be set)
+	getTo() *Address
+
+	// getValue returns the tx transfer value in wei
 	getValue() *big.Int
-	getChainID() uint64
+
+	// getChainID returns the chain ID of the tx (if any)
+	getChainID() *big.Int
+
+	// getSigValues returns the tx signature values (if any)
 	getSigValues() (v, r, s *big.Int)
+
+	// getData returns the tx payload
 	getData() []byte
+
+	// getGasPrice returns the gas price of the tx (if any)
 	getGasPrice() *big.Int
+
+	// getHash returns the transaction hash (signature payload)
+	getHash() Hash
 
 	// EIP-1559 //
 
+	// getMaxFeePerGas returns the maximum fee to be paid for unit of gas
 	getMaxFeePerGas() *big.Int
+
+	// getMaxPriorityFeePerGas returns the max priority fee per gas
 	getMaxPriorityFeePerGas() *big.Int
 
 	// EIP-2930 //
-	getAccessList() []*AccessListEntry
+
+	// getAccessList returns the tx access list, if any
+	getAccessList() AccessList
 }
 
 type Transaction struct {
-	inner TransactionData
+	inner transactionData
 
 	// Quick lookup
-	//nolint:unused // Currently unused
 	from atomic.Value
 	hash atomic.Value
+}
+
+// NewTransaction creates a new transaction wrapper
+func NewTransaction(inner transactionData) *Transaction {
+	return &Transaction{
+		inner: inner,
+	}
 }
 
 func (t *Transaction) Type() byte {
@@ -55,16 +91,50 @@ func (t *Transaction) Gas() uint64 {
 }
 
 // To returns the To address of the transaction.
-// If none is set (ex. contract deployment), it returns ZeroAddress
-func (t *Transaction) To() Address {
+// If none is set (ex. contract deployment), it returns nil
+func (t *Transaction) To() *Address {
 	return t.inner.getTo()
+}
+
+// From returns the sender address (origin) of the transaction.
+// The sender address is derived from the signature values
+// of the transaction, if any are set.
+//
+// Assumes transaction signature values (V, R, S) are verified
+func (t *Transaction) From() (*Address, error) {
+	// Check if the sender was derived in the past
+	if fromRaw := t.from.Load(); fromRaw != nil {
+		from, _ := fromRaw.(Address)
+
+		return &from, nil
+	}
+
+	var (
+		txHash  = t.Hash()
+		v, r, s = t.SigValues()
+	)
+
+	// Prepare the ECRecover payload
+	payload := secp256k1.PrepareECRecover(txHash.ToBytes(), v, r, s)
+
+	recoveredAddress, err := secp256k1.ECRecover(payload)
+	if err != nil {
+		return nil, fmt.Errorf("unable to ECRECOVER the address: %w", err)
+	}
+
+	// Save the derived address for future calls
+	address := BytesToAddress(recoveredAddress)
+
+	t.from.Store(address)
+
+	return &address, nil
 }
 
 func (t *Transaction) Value() *big.Int {
 	return t.inner.getValue()
 }
 
-func (t *Transaction) ChainID() uint64 {
+func (t *Transaction) ChainID() *big.Int {
 	return t.inner.getChainID()
 }
 
@@ -81,7 +151,7 @@ func (t *Transaction) GasPrice() *big.Int {
 	return t.inner.getGasPrice()
 }
 
-func (t *Transaction) AccessList() []*AccessListEntry {
+func (t *Transaction) AccessList() AccessList {
 	return t.inner.getAccessList()
 }
 
@@ -112,29 +182,11 @@ func (t *Transaction) Hash() Hash {
 		return hash
 	}
 
-	// Calculate the hash based on the type
-	var hash Hash
-	if t.Type() == TransactionLegacy {
-		hash = getLegacyTransactionHash(t)
-	} else {
-		hash = getNonLegacyTransactionHash(t)
-	}
+	// Calculate the transaction hash
+	hash := t.inner.getHash()
 
 	// Update the builtin transaction cache
 	t.hash.Store(hash)
 
 	return hash
-}
-
-// getLegacyTransactionHash calculates the transaction hash
-// as the keccak256 hash of the RLP encoding of the transaction
-func getLegacyTransactionHash(_ *Transaction) Hash {
-	return ZeroHash
-}
-
-// getNonLegacyTransactionHash calculates the transaction hash
-// as the keccak 256 hash of the RLP encoding of the transaction, and
-// the transaction type
-func getNonLegacyTransactionHash(_ *Transaction) Hash {
-	return ZeroHash
 }

@@ -26,10 +26,77 @@ type TxLegacy struct {
 	GasPrice *big.Int // the gas price of the tx
 	Value    *big.Int // value of the transfer (if any)
 	V, R, S  *big.Int // the signature fields
-	To       *[]byte  // recipient address (nil means contract deployment)
+	To       *Address // recipient address (nil means contract deployment)
 	Data     []byte   // data (payload) of the tx, if any
 	Nonce    uint64   // the sender nonce
 	Gas      uint64   // the gas limit of the tx
+}
+
+func (tx *TxLegacy) getType() byte {
+	return TransactionLegacy
+}
+
+func (tx *TxLegacy) getNonce() uint64 {
+	return tx.Nonce
+}
+
+func (tx *TxLegacy) getGas() uint64 {
+	return tx.Gas
+}
+
+func (tx *TxLegacy) getTo() *Address {
+	return tx.To
+}
+
+func (tx *TxLegacy) getValue() *big.Int {
+	return tx.Value
+}
+
+func (tx *TxLegacy) getChainID() *big.Int {
+	v64 := tx.V.Uint64()
+	if v64 == 27 || v64 == 28 {
+		// Legacy transactions (pre EIP-155)
+		// have no chain ID
+		return big0
+	}
+
+	// For EIP-155 transactions, calculate chain ID
+	// as chain ID = (V - 35) / 2
+	return big.NewInt(0).Rsh(
+		big.NewInt(0).Sub(
+			tx.V,
+			big35,
+		),
+		1,
+	)
+}
+
+func (tx *TxLegacy) getSigValues() (v, r, s *big.Int) {
+	return tx.V, tx.R, tx.S
+}
+
+func (tx *TxLegacy) getData() []byte {
+	return tx.Data
+}
+
+func (tx *TxLegacy) getGasPrice() *big.Int {
+	return tx.GasPrice
+}
+
+func (tx *TxLegacy) getMaxFeePerGas() *big.Int {
+	return tx.GasPrice
+}
+
+func (tx *TxLegacy) getMaxPriorityFeePerGas() *big.Int {
+	return tx.GasPrice
+}
+
+func (tx *TxLegacy) getAccessList() AccessList {
+	return nil // there is no access list
+}
+
+func (tx *TxLegacy) getHash() Hash {
+	return BytesToHash(tx.SignaturePayload())
 }
 
 // FromRLP parses a legacy transaction from the transaction data RLP encoding.
@@ -112,7 +179,9 @@ func (tx *TxLegacy) FromRLP(txPayload []byte) error {
 
 	if toRaw := listValues[3].GetValue(); toRaw != nil {
 		to, _ := toRaw.([]byte)
-		tx.To = &to
+		address := BytesToAddress(to)
+
+		tx.To = &address
 	}
 
 	// Decode the value
@@ -219,7 +288,7 @@ func (tx *TxLegacy) SignaturePayload() []byte {
 
 	var toAddress []byte
 	if tx.To != nil {
-		toAddress = *tx.To
+		toAddress = tx.To.ToBytes()
 	}
 
 	// Check how the signing data should be constructed
