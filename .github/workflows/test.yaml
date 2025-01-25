@@ -5,6 +5,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       GOPRIVATE: github.com/sig-0/*
     steps:
