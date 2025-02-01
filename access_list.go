@@ -91,14 +91,17 @@ func (l AccessList) ToProto() []*txProto.AccessListEntry {
 
 // FromProto parses the access list from the proto representation
 func (l *AccessList) FromProto(protoList []*txProto.AccessListEntry) {
-	*l = make([]AccessListEntry, 0, len(protoList))
-
-	for _, entry := range protoList {
-		acEntry := AccessListEntry{}
-		acEntry.FromProto(entry)
-
-		*l = append(*l, acEntry)
+	if protoList == nil {
+		*l = nil
+		return
 	}
+
+	entries := make([]AccessListEntry, len(protoList))
+	for i, entry := range protoList {
+		entries[i].FromProto(entry)
+	}
+
+	*l = entries
 }
 
 // FromRLP parses the RLP encoding of a single access list entry

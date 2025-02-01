@@ -7,7 +7,10 @@ import (
 
 	"github.com/sig-0/ethrlp"
 	"github.com/sig-0/ethtypes/keccak"
+	txProto "github.com/sig-0/ethtypes/proto/tx/v1"
 )
+
+var ErrInvalidProtoEIP2930Tx = errors.New("invalid proto EIP-2930 tx payload")
 
 // TxEIP2930 represents an access list transaction,
 // introduced as part of EIP-2930
@@ -322,4 +325,100 @@ func (tx *TxEIP2930) SignaturePayload() []byte {
 	// This keccak output is what's actually being
 	// signed by the private key (this is the sign data)
 	return keccak.New().Hash(rlpEncoding)
+}
+
+// FromProto converts a proto Transaction (assumed to be EIP-2930) into a TxEIP2930
+func (tx *TxEIP2930) FromProto(pb *txProto.Transaction) error {
+	if pb == nil {
+		return ErrNilProtoTx
+	}
+
+	// Check that the oneof payload is of type EIP2930
+	eip2930Wrapper, ok := pb.Payload.(*txProto.Transaction_Eip2930)
+	if !ok || eip2930Wrapper.Eip2930 == nil {
+		return ErrInvalidProtoEIP2930Tx
+	}
+
+	tx.Nonce = pb.Nonce
+	tx.Gas = pb.Gas
+	tx.Data = pb.Data
+	tx.Value = new(big.Int).SetBytes(pb.Value)
+	// The YParity is stored in the 'v' field
+	tx.YParity = new(big.Int).SetBytes(pb.V)
+	tx.R = new(big.Int).SetBytes(pb.R)
+	tx.S = new(big.Int).SetBytes(pb.S)
+
+	tx.To = nil
+
+	if len(pb.To) > 0 {
+		addr := BytesToAddress(pb.To)
+
+		tx.To = &addr
+	}
+
+	// Convert EIP-2930-specific fields
+	eip := eip2930Wrapper.Eip2930
+
+	tx.GasPrice = new(big.Int).SetBytes(eip.GasPrice)
+	tx.ChainID = new(big.Int).SetBytes(eip.ChainId)
+
+	accessList := new(AccessList)
+	accessList.FromProto(eip.AccessList)
+
+	tx.AccessList = *accessList
+
+	return nil
+}
+
+// ToProto converts the TxEIP2930 into its proto Transaction representation
+func (tx *TxEIP2930) ToProto() (*txProto.Transaction, error) {
+	pb := &txProto.Transaction{
+		Nonce: tx.Nonce,
+		Gas:   tx.Gas,
+		Data:  tx.Data,
+	}
+
+	if tx.Value != nil {
+		pb.Value = tx.Value.Bytes()
+	}
+
+	// The YParity is stored in the 'v' field
+	if tx.YParity != nil {
+		pb.V = tx.YParity.Bytes()
+	}
+
+	if tx.R != nil {
+		pb.R = tx.R.Bytes()
+	}
+
+	if tx.S != nil {
+		pb.S = tx.S.Bytes()
+	}
+
+	// Convert To address (empty means contract deployment)
+	tx.To = nil
+
+	if len(pb.To) > 0 {
+		addr := BytesToAddress(pb.To)
+		tx.To = &addr
+	}
+
+	// Set the EIP-2930 payload
+	eip := &txProto.EIP2930{
+		AccessList: tx.AccessList.ToProto(),
+	}
+
+	if tx.GasPrice != nil {
+		eip.GasPrice = tx.GasPrice.Bytes()
+	}
+
+	if tx.ChainID != nil {
+		eip.ChainId = tx.ChainID.Bytes()
+	}
+
+	pb.Payload = &txProto.Transaction_Eip2930{
+		Eip2930: eip,
+	}
+
+	return pb, nil
 }

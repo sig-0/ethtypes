@@ -8,51 +8,52 @@ import "tx/v1/tx.proto";
 
 // Represents a single Ethereum block
 message Block {
-  oneof header {
-    Header header_legacy = 1; // Legacy header
-    Header1559 header_1559 = 2; // EIP-1559 header
-    Header4895 header_4895 = 3; // EIP-4895 header
-  }
-
-  tx.v1.Transactions transactions = 4; // List of transactions included in the block
+  Header header = 1;
+  repeated tx.v1.Transaction transactions = 2; // List of transactions included in the block
 }
 
-// Header is the legacy block header
+// Header contains common fields for all block headers, plus an optional payload for type-specific details
 message Header {
-  uint64 number = 1;                    // The block number (height of the block in the chain)
-  bytes miner = 2;                      // Address of the miner who produced this block
-  int64 timestamp = 3;                  // Timestamp when the block was mined
-  bytes receipts_root = 4;              // Root of the receipts trie (all transaction receipts for this block)
-  uint64 gas_used = 5;                  // Total gas used by all transactions in the block
-  uint64 gas_limit = 6;                 // Gas limit for the block
-  uint64 size = 7;                      // Size of the block in bytes
-  bytes mix_hash = 8;                   // Hash used in the proof-of-work algorithm (before Ethereum 2.0)
-  bytes extra_data = 9;                // Extra data field, often used for miner-encoded information
-  bytes logs_bloom = 10;                // Bloom filter for quick searching of logs in the block
-  uint64 difficulty = 11;               // The difficulty of mining the block
-  bytes parent_hash = 12;               // Hash of the previous block (the parent block)
-  bytes state_root = 13;                // Root of the state trie (Ethereum state at the end of this block)
-  bytes transactions_root = 14;         // Root of the transactions trie (all transactions for this block)
-  uint64 nonce = 15;                    // Random value used by the miner in proof-of-work (before Ethereum 2.0)
-  uint64 total_difficulty = 16;         // Total cumulative difficulty of the chain up to this block
-  bytes sha3_uncles = 17;               // SHA3 hash of the uncles included in the block
-  repeated bytes uncles = 18;           // List of uncle block hashes included in this block
+  uint64 number = 1;              // The block number (height of the block in the chain)
+  bytes miner = 2;                // Address of the miner who produced this block
+  int64 timestamp = 3;            // Timestamp when the block was mined
+  bytes receipts_root = 4;        // Root of the receipts trie (all transaction receipts for this block)
+  uint64 gas_used = 5;            // Total gas used by all transactions in the block
+  uint64 gas_limit = 6;           // Gas limit for the block
+  uint64 size = 7;                // Size of the block in bytes
+  bytes mix_hash = 8;             // Hash used in the proof-of-work algorithm (before Ethereum 2.0)
+  bytes extra_data = 9;           // Extra data field, often used for miner-encoded information
+  bytes logs_bloom = 10;          // Bloom filter for quick searching of logs in the block
+  uint64 difficulty = 11;         // The difficulty of mining the block
+  bytes parent_hash = 12;         // Hash of the previous block (the parent block)
+  bytes state_root = 13;          // Root of the state trie (Ethereum state at the end of this block)
+  bytes transactions_root = 14;   // Root of the transactions trie (all transactions for this block)
+  uint64 nonce = 15;              // Random value used by the miner in proof-of-work (before Ethereum 2.0)
+  uint64 total_difficulty = 16;   // Total cumulative difficulty of the chain up to this block
+  bytes sha3_uncles = 17;         // SHA3 hash of the uncles included in the block
+  repeated bytes uncles = 18;     // List of uncle block hashes included in this block
+
+  // --- Type-specific fields ---
+  oneof payload {
+    // Fields specific to an EIP-1559 block header
+    EIP1559Payload eip1559 = 19;
+    // Fields specific to an EIP-4895 block header
+    EIP4895Payload eip4895 = 20;
+  }
 }
 
-// Header1559 contains gas fee information relating to
+// EIP1559Payload contains gas fee information relating to
 // London hardfork transactions
 // https://eips.ethereum.org/EIPS/eip-1559
-message Header1559 {
-  Header header_common = 1;
-  bytes base_fee_per_gas = 2;          // Base fee per gas unit for EIP-1559 blocks
+message EIP1559Payload {
+  bytes base_fee_per_gas = 1;   // Base fee per gas unit for EIP-1559 blocks
 }
 
-// Header4895 contains withdrawals information relating to
+// EIP4895Payload contains withdrawals information relating to
 // Ethereum 2.0 upgrades
 // https://eips.ethereum.org/EIPS/eip-4895
-message Header4895 {
-  Header header_common = 1;
-  bytes withdrawals_root = 2;          // Root of the withdrawals trie (for withdrawals from validators)
+message EIP4895Payload {
+  bytes withdrawals_root = 1;   // Root of the withdrawals trie (for withdrawals from validators)
 }
 
 // Withdrawal is a withdrawal from a validator in Ethereum 2.0

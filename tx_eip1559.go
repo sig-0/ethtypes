@@ -7,6 +7,7 @@ import (
 
 	"github.com/sig-0/ethrlp"
 	"github.com/sig-0/ethtypes/keccak"
+	txProto "github.com/sig-0/ethtypes/proto/tx/v1"
 )
 
 var (
@@ -15,6 +16,8 @@ var (
 	ErrInvalidRLPMaxFeePerGas   = errors.New("invalid max fee per gas RLP encoding")
 	ErrInvalidRLPAccessList     = errors.New("invalid access list RLP encoding")
 	ErrInvalidRLPYParity        = errors.New("invalid y parity param RLP encoding")
+
+	ErrInvalidProtoEIP1559Tx = errors.New("invalid proto EIP-1559 tx payload")
 )
 
 // TxEIP1559 represents a dynamic fee transaction,
@@ -347,4 +350,103 @@ func (tx *TxEIP1559) SignaturePayload() []byte {
 	// This keccak output is what's actually being
 	// signed by the private key (this is the sign data)
 	return keccak.New().Hash(rlpEncoding)
+}
+
+// FromProto converts a proto Transaction (assumed to be EIP-1559) into a TxEIP1559
+func (tx *TxEIP1559) FromProto(pb *txProto.Transaction) error {
+	if pb == nil {
+		return ErrNilProtoTx
+	}
+
+	// Check that the oneof payload is of type EIP1559
+	eip1559Wrapper, ok := pb.Payload.(*txProto.Transaction_Eip1559)
+	if !ok || eip1559Wrapper.Eip1559 == nil {
+		return ErrInvalidProtoEIP1559Tx
+	}
+
+	tx.Nonce = pb.Nonce
+	tx.Gas = pb.Gas
+	tx.Data = pb.Data
+	tx.Value = new(big.Int).SetBytes(pb.Value)
+	// The YParity is stored in the 'v' field
+	tx.YParity = new(big.Int).SetBytes(pb.V)
+	tx.R = new(big.Int).SetBytes(pb.R)
+	tx.S = new(big.Int).SetBytes(pb.S)
+
+	tx.To = nil
+	if len(pb.To) > 0 {
+		addr := BytesToAddress(pb.To)
+
+		tx.To = &addr
+	}
+
+	// Convert EIP-1559-specific fields
+	eip := eip1559Wrapper.Eip1559
+
+	tx.MaxPriorityFeePerGas = new(big.Int).SetBytes(eip.MaxPriorityFeePerGas)
+	tx.MaxFeePerGas = new(big.Int).SetBytes(eip.MaxFeePerGas)
+	tx.ChainID = new(big.Int).SetBytes(eip.ChainId)
+
+	accessList := new(AccessList)
+	accessList.FromProto(eip.AccessList)
+
+	tx.AccessList = *accessList
+
+	return nil
+}
+
+// ToProto converts the TxEIP1559 into its proto Transaction representation
+func (tx *TxEIP1559) ToProto() (*txProto.Transaction, error) {
+	pb := &txProto.Transaction{
+		Nonce: tx.Nonce,
+		Gas:   tx.Gas,
+		Data:  tx.Data,
+	}
+
+	if tx.Value != nil {
+		pb.Value = tx.Value.Bytes()
+	}
+
+	// The YParity is stored in the 'v' field
+	if tx.YParity != nil {
+		pb.V = tx.YParity.Bytes()
+	}
+
+	if tx.R != nil {
+		pb.R = tx.R.Bytes()
+	}
+
+	if tx.S != nil {
+		pb.S = tx.S.Bytes()
+	}
+
+	// Convert To address (empty means contract deployment)
+	tx.To = nil
+	if len(pb.To) > 0 {
+		addr := BytesToAddress(pb.To)
+		tx.To = &addr
+	}
+
+	// Set the EIP-1559 payload
+	eip := &txProto.EIP1559{
+		AccessList: tx.AccessList.ToProto(),
+	}
+
+	if tx.MaxPriorityFeePerGas != nil {
+		eip.MaxPriorityFeePerGas = tx.MaxPriorityFeePerGas.Bytes()
+	}
+
+	if tx.MaxFeePerGas != nil {
+		eip.MaxFeePerGas = tx.MaxFeePerGas.Bytes()
+	}
+
+	if tx.ChainID != nil {
+		eip.ChainId = tx.ChainID.Bytes()
+	}
+
+	pb.Payload = &txProto.Transaction_Eip1559{
+		Eip1559: eip,
+	}
+
+	return pb, nil
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/sig-0/ethrlp"
 	"github.com/sig-0/ethtypes/keccak"
+	txProto "github.com/sig-0/ethtypes/proto/tx/v1"
 )
 
 var (
@@ -18,6 +19,9 @@ var (
 	ErrInvalidRLPVParam   = errors.New("invalid v sig param RLP encoding")
 	ErrInvalidRLPRParam   = errors.New("invalid r sig param RLP encoding")
 	ErrInvalidRLPSParam   = errors.New("invalid s sig param RLP encoding")
+
+	ErrNilProtoTx           = errors.New("proto transaction is nil")
+	ErrInvalidProtoLegacyTx = errors.New("invalid proto legacy tx payload")
 )
 
 // TxLegacy represents the legacy transaction type
@@ -327,4 +331,83 @@ func (tx *TxLegacy) SignaturePayload() []byte {
 	// This keccak output is what's actually being
 	// signed by the private key (this is the sign data)
 	return keccak.New().Hash(rlpEncoding)
+}
+
+// FromProto converts a proto Transaction (assumed to be legacy) into the legacy format
+func (tx *TxLegacy) FromProto(pb *txProto.Transaction) error {
+	// Sanity check
+	if pb == nil {
+		return ErrNilProtoTx
+	}
+
+	// Make sure the payload is of type Legacy
+	legacyWrapper, ok := pb.Payload.(*txProto.Transaction_Legacy)
+	if !ok || legacyWrapper.Legacy == nil {
+		return ErrInvalidProtoLegacyTx
+	}
+
+	tx.Nonce = pb.Nonce
+	tx.Gas = pb.Gas
+	tx.Data = pb.Data
+	tx.Value = new(big.Int).SetBytes(pb.Value)
+	tx.V = new(big.Int).SetBytes(pb.V)
+	tx.R = new(big.Int).SetBytes(pb.R)
+	tx.S = new(big.Int).SetBytes(pb.S)
+
+	// Convert To address (empty means contract deployment)
+	tx.To = nil
+
+	if len(pb.To) > 0 {
+		addr := BytesToAddress(pb.To)
+		tx.To = &addr
+	}
+
+	// Parse the gas price
+	tx.GasPrice = new(big.Int).SetBytes(legacyWrapper.Legacy.GasPrice)
+
+	return nil
+}
+
+// ToProto converts the TxLegacy into its proto Transaction representation
+func (tx *TxLegacy) ToProto() (*txProto.Transaction, error) {
+	pb := &txProto.Transaction{
+		Nonce: tx.Nonce,
+		Gas:   tx.Gas,
+		Data:  tx.Data,
+	}
+
+	if tx.Value != nil {
+		pb.Value = tx.Value.Bytes()
+	}
+
+	if tx.V != nil {
+		pb.V = tx.V.Bytes()
+	}
+
+	if tx.R != nil {
+		pb.R = tx.R.Bytes()
+	}
+
+	if tx.S != nil {
+		pb.S = tx.S.Bytes()
+	}
+
+	if tx.To != nil {
+		pb.To = tx.To.ToBytes()
+	}
+
+	// Set the legacy payload
+	var gasPrice []byte
+
+	if tx.GasPrice != nil {
+		gasPrice = tx.GasPrice.Bytes()
+	}
+
+	pb.Payload = &txProto.Transaction_Legacy{
+		Legacy: &txProto.Legacy{
+			GasPrice: gasPrice,
+		},
+	}
+
+	return pb, nil
 }

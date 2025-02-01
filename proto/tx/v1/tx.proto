@@ -4,64 +4,52 @@ package tx.v1;
 
 option go_package = "github.com/sig-0/ethtypes/proto/tx/v1;tx";
 
-// Represents common fields shared by all transaction types
-message TransactionCommon {
+// Represents an Ethereum transaction with common fields and a type-specific payload
+message Transaction {
   bytes hash = 1;         // The transaction hash (calculated)
   uint64 nonce = 2;       // Unique identifier for each transaction from a specific account
   bytes from = 3;         // The transaction signer (sender)
-  optional bytes to = 4;  // The recipient address (optional)
+  // If the transaction is contract creation, 'to' will be empty
+  bytes to = 4;
   uint64 gas = 5;         // The gas limit for the transaction
   bytes value = 6;        // The amount of wei sent in the transaction
   bytes data = 7;         // Input data for contract interactions
   bytes v = 8;            // ECDSA signature component 'v' (or y parity)
   bytes r = 9;            // ECDSA signature component 'r'
   bytes s = 10;           // ECDSA signature component 's'
+
+  // --- Type-specific transaction fields ---
+  oneof payload {
+    Legacy legacy = 11;     // Legacy (pre-EIP-1559) transaction details
+    EIP1559 eip1559 = 12;   // EIP-1559 transaction details with dynamic fees
+    EIP2930 eip2930 = 13;   // EIP-2930 transaction details with access lists
+  }
 }
 
-// Represents a legacy transaction (pre-EIP-1559)
-message TransactionLegacy {
-  TransactionCommon transaction_common = 1;
-  bytes gas_price = 2;  // The gas price in the legacy transaction format
+// Additional fields for a legacy transaction
+message Legacy {
+  bytes gas_price = 1;  // Gas price in the legacy transaction format
 }
 
-// Represents an EIP-1559 transaction with dynamic fees
-message Transaction1559 {
-  TransactionCommon transaction_common = 1;   // Embeds common transaction fields
-  uint64 type = 2;                            // Transaction type (e.g., legacy, 1559, etc.)
-  bytes max_priority_fee_per_gas = 3;         // Maximum tip a user is willing to pay to the miner
-  bytes max_fee_per_gas = 4;                  // Maximum total fee per gas unit
-  repeated AccessListEntry access_list = 5;   // List of contract addresses and storage keys accessed
-  bytes chain_id = 6;                         // The chain ID of the transaction, if any
+// Additional fields for an EIP-1559 transaction
+message EIP1559 {
+  bytes max_priority_fee_per_gas = 1; // Maximum tip a user is willing to pay to the block creator
+  bytes max_fee_per_gas = 2;          // Maximum total fee per gas unit
+  repeated AccessListEntry access_list = 3; // List of contract addresses and storage keys accessed
+  bytes chain_id = 4;                 // The chain ID of the transaction, if any
 }
 
-// Represents an EIP-2930 transaction (access list transaction)
-message Transaction2930 {
-  TransactionCommon transaction_common = 1; // Embeds common transaction fields
-  uint64 type = 2;                          // Transaction type (e.g., legacy, 1559, etc.)
-  bytes gas_price = 3;                      // Gas price for this transaction
-  repeated AccessListEntry access_list = 4; // List of contract addresses and storage keys accessed
-  bytes chain_id = 5;                       // The chain ID of the transaction, if any
+// Additional fields for an EIP-2930 transaction.
+message EIP2930 {
+  bytes gas_price = 1;                // Gas price for this transaction
+  repeated AccessListEntry access_list = 2; // List of contract addresses and storage keys accessed
+  bytes chain_id = 3;                 // The chain ID of the transaction, if any
 }
 
-// Represents an entry in the access list, specifying a contract address and associated storage keys
+// Represents an entry in an access list.
 message AccessListEntry {
   bytes address = 1;                // Contract address
   repeated bytes storage_keys = 2;  // Storage keys within the contract to access
-}
-
-// A collection of transactions
-message Transactions {
-  repeated TransactionWrapper transactions = 1;
-}
-
-// A wrapper message to allow different types of transactions in one field
-message TransactionWrapper {
-  oneof transaction_type {
-    TransactionLegacy tx_legacy = 1;  // Legacy transaction
-    Transaction1559 tx_1559 = 2;      // EIP-1559 transaction
-    Transaction2930 tx_2930 = 3;      // EIP-2930 transaction
-    string hash = 4;
-  }
 }
 
 // Represents a standard "call" transaction object, usually
