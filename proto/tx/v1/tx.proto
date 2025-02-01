@@ -61,12 +61,12 @@ message AccessListEntry {
 // whether it's Legacy, EIP-1559, EIP-2930, or others, based on the set fields
 message CallTx {
   bytes to = 1;                                 // destination address (required)
-  optional bytes from = 2;                      // tx originator
-  optional uint64 gas = 3;                      // gas limit for the transaction
-  optional bytes gas_price = 4;                 // gas price of the tx (used for pre-EIP-1559 txs)
-  optional bytes max_fee_per_gas = 5;           // max fee per gas unit (used for post-EIP-1559 txs)
-  optional bytes max_priority_fee_per_gas = 6;  // max priority fee per gas (used for post-EIP-1559 txs)
-  optional bytes value = 7;                     // value in wei being transferred
-  optional bytes data = 8;                      // execution data of the call, if any
+  bytes from = 2;                      // tx originator
+  uint64 gas = 3;                      // gas limit for the transaction
+  bytes gas_price = 4;                 // gas price of the tx (used for pre-EIP-1559 txs)
+  bytes max_fee_per_gas = 5;           // max fee per gas unit (used for post-EIP-1559 txs)
+  bytes max_priority_fee_per_gas = 6;  // max priority fee per gas (used for post-EIP-1559 txs)
+  bytes value = 7;                     // value in wei being transferred
+  bytes data = 8;                      // execution data of the call, if any
   repeated AccessListEntry access_list = 9;     // access list associated with the tx (used for EIP-2930 txs)
 }
