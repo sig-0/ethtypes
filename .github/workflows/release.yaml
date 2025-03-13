@@ -16,11 +16,8 @@ jobs:
     env:
       GOPRIVATE: github.com/sig-0/*
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          repository: sig-0/ethcrypto
-          token: ${{ secrets.ORG_PAT }}
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
