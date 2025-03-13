@@ -8,7 +8,9 @@ jobs:
   lint:
     name: Go Linter
     uses: ./.github/workflows/lint.yaml
+    secrets: inherit
 
   test:
     name: Go Test
     uses: ./.github/workflows/test.yaml
+    secrets: inherit
