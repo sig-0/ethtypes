@@ -25,7 +25,7 @@ jobs:
         run: go test -shuffle=on -coverprofile coverage.out -timeout 5m ./...
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           slug: sig-0/ethtypes
           files: coverage.out
