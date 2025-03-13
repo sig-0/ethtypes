@@ -8,7 +8,7 @@ jobs:
     permissions:
       contents: read
     env:
-      GOPRIVATE: github.com/sig-0
+      GOPRIVATE: github.com/sig-0/*
     steps:
       - name: Install Go
         uses: actions/setup-go@v5
