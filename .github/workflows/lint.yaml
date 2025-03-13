@@ -10,15 +10,24 @@ jobs:
     env:
       GOPRIVATE: github.com/sig-0
     steps:
-      - name: Configure git for private modules
-        env:
-          TOKEN: ${{ secrets.ORG_PAT }}
-        run: git config --global url."https://user:${TOKEN}@github.com".insteadOf "https://github.com"
-
       - name: Install Go
         uses: actions/setup-go@v5
         with:
           go-version: 1.23.x
+
+      - name: Add SSH Go Module Private Key
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add - <<< "${{ secrets.GO_MODULE_PRIVATE_KEY }}"
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV   
+
+      - name: Setup access for private go modules
+        run: |
+          git config --global url."ssh://git@github.com/".insteadOf https://github.com/        
 
       - name: Checkout code
         uses: actions/checkout@v4
