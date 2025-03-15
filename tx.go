@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 
 	"github.com/sig-0/ethcrypto/secp256k1"
+	txProto "github.com/sig-0/ethtypes/proto/eth/v1"
 )
 
 const (
@@ -189,4 +190,62 @@ func (t *Transaction) Hash() Hash {
 	t.hash.Store(hash)
 
 	return hash
+}
+
+// ToProto converts the Transaction into its proto representation
+func (t *Transaction) ToProto() (*txProto.Transaction, error) {
+	switch t.Type() {
+	case TransactionLegacy:
+		tx := t.inner.(*TxLegacy)
+
+		return tx.ToProto()
+	case Transaction2930:
+		tx := t.inner.(*TxEIP2930)
+
+		return tx.ToProto()
+	case Transaction1559:
+		tx := t.inner.(*TxEIP1559)
+
+		return tx.ToProto()
+	}
+
+	return nil, fmt.Errorf("unknown transaction type, %x", t.Type())
+}
+
+// FromProto converts a proto Transaction into a Transaction
+func (t *Transaction) FromProto(pb *txProto.Transaction) error {
+	if pb == nil {
+		return ErrNilProtoTx
+	}
+
+	switch payload := pb.Payload.(type) {
+	case *txProto.Transaction_Legacy:
+		tx := &TxLegacy{}
+
+		if err := tx.FromProto(pb); err != nil {
+			return fmt.Errorf("unable to parse legacy proto: %w", err)
+		}
+
+		t.inner = tx
+	case *txProto.Transaction_Eip2930:
+		tx := &TxEIP2930{}
+
+		if err := tx.FromProto(pb); err != nil {
+			return fmt.Errorf("unable to parse EIP2930 proto: %w", err)
+		}
+
+		t.inner = tx
+	case *txProto.Transaction_Eip1559:
+		tx := &TxEIP1559{}
+
+		if err := tx.FromProto(pb); err != nil {
+			return fmt.Errorf("unable to parse EIP1559 proto: %w", err)
+		}
+
+		t.inner = tx
+	default:
+		return fmt.Errorf("unsupported proto payload type: %T", payload)
+	}
+
+	return nil
 }
