@@ -64,10 +64,12 @@ message CallTx {
   uint64 gas = 3;                      // gas limit for the transaction
   bytes value = 4;                     // value in wei being transferred
   bytes data = 5;                      // execution data of the call, if any
+  bytes chain_id = 6;                   // the ID of the chain, if any
+  uint64 nonce = 7;                    // the account nonce, if any
 
   oneof payload {
-    Legacy legacy = 6;     // Legacy (pre-EIP-1559) transaction details
-    EIP1559 eip1559 = 7;   // EIP-1559 transaction details with dynamic fees
-    EIP2930 eip2930 = 8;   // EIP-2930 transaction details with access lists
+    Legacy legacy = 8;     // Legacy (pre-EIP-1559) transaction details
+    EIP1559 eip1559 = 9;   // EIP-1559 transaction details with dynamic fees
+    EIP2930 eip2930 = 10;   // EIP-2930 transaction details with access lists
   }
 }
