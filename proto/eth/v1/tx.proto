@@ -1,16 +1,15 @@
 syntax = "proto3";
 
-package tx.v1;
+package eth.v1;
 
-option go_package = "github.com/sig-0/ethtypes/proto/tx/v1;tx";
+option go_package = "github.com/sig-0/ethtypes/proto/eth/v1";
 
 // Represents an Ethereum transaction with common fields and a type-specific payload
 message Transaction {
   bytes hash = 1;         // The transaction hash (calculated)
   uint64 nonce = 2;       // Unique identifier for each transaction from a specific account
   bytes from = 3;         // The transaction signer (sender)
-  // If the transaction is contract creation, 'to' will be empty
-  bytes to = 4;
+  bytes to = 4;           // If the transaction is contract creation, 'to' will be empty
   uint64 gas = 5;         // The gas limit for the transaction
   bytes value = 6;        // The amount of wei sent in the transaction
   bytes data = 7;         // Input data for contract interactions

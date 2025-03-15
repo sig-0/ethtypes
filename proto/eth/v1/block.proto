@@ -1,15 +1,15 @@
 syntax = "proto3";
 
-package block.v1;
+package eth.v1;
 
-option go_package = "github.com/sig-0/ethtypes/proto/block/v1;block";
+option go_package = "github.com/sig-0/ethtypes/proto/eth/v1";
 
-import "tx/v1/tx.proto";
+import "eth/v1/tx.proto";
 
 // Represents a single Ethereum block
 message Block {
   Header header = 1;
-  repeated tx.v1.Transaction transactions = 2; // List of transactions included in the block
+  repeated Transaction transactions = 2; // List of transactions included in the block
 }
 
 // Header contains common fields for all block headers, plus an optional payload for type-specific details

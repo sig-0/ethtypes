@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/sig-0/ethrlp"
-	txProto "github.com/sig-0/ethtypes/proto/tx/v1"
+	txProto "github.com/sig-0/ethtypes/proto/eth/v1"
 )
 
 // AccessList is a wrapper for access list entries
@@ -93,6 +93,7 @@ func (l AccessList) ToProto() []*txProto.AccessListEntry {
 func (l *AccessList) FromProto(protoList []*txProto.AccessListEntry) {
 	if protoList == nil {
 		*l = nil
+
 		return
 	}
 

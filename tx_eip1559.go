@@ -7,7 +7,7 @@ import (
 
 	"github.com/sig-0/ethrlp"
 	"github.com/sig-0/ethtypes/keccak"
-	txProto "github.com/sig-0/ethtypes/proto/tx/v1"
+	txProto "github.com/sig-0/ethtypes/proto/eth/v1"
 )
 
 var (
@@ -374,6 +374,7 @@ func (tx *TxEIP1559) FromProto(pb *txProto.Transaction) error {
 	tx.S = new(big.Int).SetBytes(pb.S)
 
 	tx.To = nil
+
 	if len(pb.To) > 0 {
 		addr := BytesToAddress(pb.To)
 
@@ -422,6 +423,7 @@ func (tx *TxEIP1559) ToProto() (*txProto.Transaction, error) {
 
 	// Convert To address (empty means contract deployment)
 	tx.To = nil
+
 	if len(pb.To) > 0 {
 		addr := BytesToAddress(pb.To)
 		tx.To = &addr

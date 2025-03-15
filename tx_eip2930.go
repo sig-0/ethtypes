@@ -7,7 +7,7 @@ import (
 
 	"github.com/sig-0/ethrlp"
 	"github.com/sig-0/ethtypes/keccak"
-	txProto "github.com/sig-0/ethtypes/proto/tx/v1"
+	txProto "github.com/sig-0/ethtypes/proto/eth/v1"
 )
 
 var ErrInvalidProtoEIP2930Tx = errors.New("invalid proto EIP-2930 tx payload")

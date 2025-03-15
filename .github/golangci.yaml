@@ -47,7 +47,7 @@ linters:
     - promlinter # Lints Prometheus metrics names
     - reassign # Checks that package variables are not reassigned
     - revive # Drop-in replacement for golint
-    - tenv # Detects using os.Setenv instead of t.Setenv
+    - usetesting # Detects using os.Setenv instead of t.Setenv
     - testableexamples # Checks if examples are testable (have expected output)
     - unparam # Finds unused params
     - usestdlibvars # Detects the possibility to use variables/constants from stdlib

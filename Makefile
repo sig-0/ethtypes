@@ -14,12 +14,12 @@ fixalign:
 
 .PHONY: proto-gen
 proto-gen:
-	buf generate --config ./proto/buf.yaml --template ./proto/buf.gen.yaml
+	buf generate --config ./buf.yaml --template ./buf.gen.yaml
 
 .PHONY: proto-build
 proto-build:
-	buf build --config ./proto/buf.yaml
+	buf build --config ./buf.yaml
 
 .PHONY: proto-lint
 proto-lint:
-	buf lint --config ./proto/buf.yaml
+	buf lint --config ./buf.yaml
