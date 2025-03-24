@@ -33,7 +33,7 @@ jobs:
           git config --global url."ssh://git@github.com/".insteadOf https://github.com/        
 
       - name: Lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
           args:
             --config=./.github/golangci.yaml
