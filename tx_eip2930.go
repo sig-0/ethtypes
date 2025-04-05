@@ -12,6 +12,8 @@ import (
 
 var ErrInvalidProtoEIP2930Tx = errors.New("invalid proto EIP-2930 tx payload")
 
+var _ transactionData = (*TxEIP2930)(nil)
+
 // TxEIP2930 represents an access list transaction,
 // introduced as part of EIP-2930
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2930.md

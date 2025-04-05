@@ -20,6 +20,8 @@ var (
 	ErrInvalidProtoEIP1559Tx = errors.New("invalid proto EIP-1559 tx payload")
 )
 
+var _ transactionData = (*TxEIP1559)(nil)
+
 // TxEIP1559 represents a dynamic fee transaction,
 // introduced as part of EIP-1559 (London hardfork)
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1559.md

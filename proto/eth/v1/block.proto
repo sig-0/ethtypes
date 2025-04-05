@@ -8,37 +8,35 @@ import "eth/v1/tx.proto";
 
 // Represents a single Ethereum block
 message Block {
-  Header header = 1;
+  Header header = 1;                     // Associated block header
   repeated Transaction transactions = 2; // List of transactions included in the block
 }
 
 // Header contains common fields for all block headers, plus an optional payload for type-specific details
 message Header {
   uint64 number = 1;              // The block number (height of the block in the chain)
-  bytes miner = 2;                // Address of the miner who produced this block
-  int64 timestamp = 3;            // Timestamp when the block was mined
+  bytes coinbase = 2;             // Address of the block creator
+  int64 timestamp = 3;            // Timestamp when the block was created
   bytes receipts_root = 4;        // Root of the receipts trie (all transaction receipts for this block)
   uint64 gas_used = 5;            // Total gas used by all transactions in the block
   uint64 gas_limit = 6;           // Gas limit for the block
-  uint64 size = 7;                // Size of the block in bytes
-  bytes mix_hash = 8;             // Hash used in the proof-of-work algorithm (before Ethereum 2.0)
-  bytes extra_data = 9;           // Extra data field, often used for miner-encoded information
-  bytes logs_bloom = 10;          // Bloom filter for quick searching of logs in the block
-  uint64 difficulty = 11;         // The difficulty of mining the block
-  bytes parent_hash = 12;         // Hash of the previous block (the parent block)
-  bytes state_root = 13;          // Root of the state trie (Ethereum state at the end of this block)
-  bytes transactions_root = 14;   // Root of the transactions trie (all transactions for this block)
-  uint64 nonce = 15;              // Random value used by the miner in proof-of-work (before Ethereum 2.0)
-  uint64 total_difficulty = 16;   // Total cumulative difficulty of the chain up to this block
-  bytes sha3_uncles = 17;         // SHA3 hash of the uncles included in the block
-  repeated bytes uncles = 18;     // List of uncle block hashes included in this block
+  bytes mix_digest = 7;           // Hash used in the proof-of-work algorithm (before Ethereum 2.0)
+  bytes extra_data = 8;           // Extra data field, often used for creator-encoded information
+  bytes logs_bloom = 9;           // Bloom filter for quick searching of logs in the block
+  uint64 difficulty = 10;         // The difficulty of mining the block
+  bytes parent_hash = 11;         // Hash of the previous block (the parent block)
+  bytes state_root = 12;          // Root of the state trie (Ethereum state at the end of this block)
+  bytes transactions_root = 13;   // Root of the transactions trie (all transactions for this block)
+  uint64 nonce = 14;              // Random value used by the miner in proof-of-work (before Ethereum 2.0)
+  bytes uncles_hash = 15;         // Hash of the uncles block list
 
   // --- Type-specific fields ---
   oneof payload {
     // Fields specific to an EIP-1559 block header
-    EIP1559Payload eip1559 = 19;
+    EIP1559Payload eip1559 = 16;
+
     // Fields specific to an EIP-4895 block header
-    EIP4895Payload eip4895 = 20;
+    EIP4895Payload eip4895 = 17;
   }
 }
 
@@ -53,7 +51,8 @@ message EIP1559Payload {
 // Ethereum 2.0 upgrades
 // https://eips.ethereum.org/EIPS/eip-4895
 message EIP4895Payload {
-  bytes withdrawals_root = 1;   // Root of the withdrawals trie (for withdrawals from validators)
+  bytes base_fee_per_gas = 1;   // Base fee per gas unit for EIP-1559 blocks
+  bytes withdrawals_root = 2;   // Root of the withdrawals trie (for withdrawals from validators)
 }
 
 // Withdrawal is a withdrawal from a validator in Ethereum 2.0

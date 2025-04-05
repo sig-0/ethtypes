@@ -1,9 +1,8 @@
-//nolint:unused // Currently unused
 package ethtypes
 
+// Block is a single Ethereum block, containing the
+// header and transactions
 type Block struct {
-	header       *Header
-	transactions []*Transaction
+	Header       *Header        // the block header
+	Transactions []*Transaction // the full transaction set
 }
-
-type Nonce [8]byte

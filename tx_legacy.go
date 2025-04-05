@@ -24,6 +24,8 @@ var (
 	ErrInvalidProtoLegacyTx = errors.New("invalid proto legacy tx payload")
 )
 
+var _ transactionData = (*TxLegacy)(nil)
+
 // TxLegacy represents the legacy transaction type
 // (pre EIP-2930, and pre EIP-1559)
 type TxLegacy struct {
