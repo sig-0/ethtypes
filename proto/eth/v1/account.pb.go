@@ -28,7 +28,7 @@ type Account struct {
 
 	Nonce       uint64 `protobuf:"varint,1,opt,name=nonce,proto3" json:"nonce,omitempty"`                               // Account sequence
 	Balance     []byte `protobuf:"bytes,2,opt,name=balance,proto3" json:"balance,omitempty"`                            // ETH balance (in wei)
-	StorageRoot []byte `protobuf:"bytes,3,opt,name=storage_root,json=storageRoot,proto3" json:"storage_root,omitempty"` // Hash of the root node of the account storage trie
+	StorageRoot []byte `protobuf:"bytes,3,opt,name=storage_root,json=storageRoot,proto3" json:"storage_root,omitempty"` // Hash of the root node of the account storage trie. This is a variable field
 	CodeHash    []byte `protobuf:"bytes,4,opt,name=code_hash,json=codeHash,proto3" json:"code_hash,omitempty"`          // Hash of the EVM code of the account.  For EOAs, this is the hash of an empty string
 }
 

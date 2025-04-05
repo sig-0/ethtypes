@@ -8,6 +8,6 @@ option go_package = "github.com/sig-0/ethtypes/proto/eth/v1";
 message Account {
   uint64 nonce = 1;       // Account sequence
   bytes balance = 2;      // ETH balance (in wei)
-  bytes storage_root = 3; // Hash of the root node of the account storage trie
+  bytes storage_root = 3; // Hash of the root node of the account storage trie. This is a variable field
   bytes code_hash = 4;    // Hash of the EVM code of the account.  For EOAs, this is the hash of an empty string
 }
