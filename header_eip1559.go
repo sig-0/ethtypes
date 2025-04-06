@@ -17,6 +17,9 @@ var _ headerData = (*HeaderEIP1559)(nil)
 // introduced as part of EIP-1559 (London hardfork)
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1559.md
 type HeaderEIP1559 struct {
+	LogsBloom        *Bloom   // Bloom filter for quick searching of logs in the block
+	BaseFeePerGas    *big.Int // Base fee per gas unit for EIP-1559 blocks
+	ExtraData        []byte   // Extra data field, often used for creator-encoded information
 	ParentHash       Hash     // Hash of the previous block (the parent block)
 	UncleHash        Hash     // Hash of the uncles block list
 	StateRoot        Hash     // Root of the state trie (Ethereum state at the end of this block)
@@ -24,15 +27,12 @@ type HeaderEIP1559 struct {
 	ReceiptsRoot     Hash     // Root of the receipts trie (all transaction receipts for this block)
 	MixDigest        Hash     // Hash used in the proof-of-work algorithm (before Ethereum 2.0)
 	Coinbase         Address  // Address of the block creator
-	LogsBloom        *Bloom   // Bloom filter for quick searching of logs in the block
-	ExtraData        []byte   // Extra data field, often used for creator-encoded information
-	BaseFeePerGas    *big.Int // Base fee per gas unit for EIP-1559 blocks
 	Difficulty       uint64   // The difficulty of mining the block
 	Number           uint64   // The block number (height of the block in the chain)
 	GasLimit         uint64   // Gas limit for the block
 	GasUsed          uint64   // Total gas used by all transactions in the block
-	Timestamp        int64    // Timestamp when the block was created
 	Nonce            uint64   // Random value used by the miner in proof-of-work (before Ethereum 2.0)
+	Timestamp        int64    // Timestamp when the block was created
 }
 
 func (h *HeaderEIP1559) getHash() Hash {
