@@ -213,8 +213,6 @@ func (tx *TxEIP2930) FromRLP(txData []byte) error {
 	tx.Data = dataRaw
 
 	// Decode the access list
-	var accessList AccessList
-
 	if listValues[7].GetType() != ethrlp.List {
 		return fmt.Errorf(
 			"invalid RLP encoding type for access list, %s",
@@ -227,7 +225,7 @@ func (tx *TxEIP2930) FromRLP(txData []byte) error {
 		return errors.New("invalid access list RLP encoding")
 	}
 
-	accessList = make(AccessList, 0)
+	accessList := make(AccessList, 0)
 	if err = accessList.FromRLPValues(accessListRaw); err != nil {
 		return fmt.Errorf("invalid access list RLP encoding: %w", err)
 	}

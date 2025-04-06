@@ -14,9 +14,9 @@ var _ headerData = (*HeaderEIP4895)(nil)
 // introduced as part of EIP-4895 (Shanghai hardfork)
 // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-4895.md
 type HeaderEIP4895 struct {
-	LogsBloom        *Bloom   // Bloom filter for quick searching of logs in the block
 	BaseFeePerGas    *big.Int // Base fee per gas unit for EIP-1559 blocks
 	ExtraData        []byte   // Extra data field, often used for creator-encoded information
+	LogsBloom        Bloom    // Bloom filter for quick searching of logs in the block
 	ParentHash       Hash     // Hash of the previous block (the parent block)
 	UncleHash        Hash     // Hash of the uncles block list
 	StateRoot        Hash     // Root of the state trie (Ethereum state at the end of this block)
@@ -65,7 +65,7 @@ func (h *HeaderEIP4895) getCoinbase() Address {
 	return h.Coinbase
 }
 
-func (h *HeaderEIP4895) getLogsBloom() *Bloom {
+func (h *HeaderEIP4895) getLogsBloom() Bloom {
 	return h.LogsBloom
 }
 

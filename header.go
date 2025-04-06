@@ -26,7 +26,7 @@ type headerData interface {
 	getReceiptsRoot() Hash
 	getMixDigest() Hash
 	getCoinbase() Address
-	getLogsBloom() *Bloom
+	getLogsBloom() Bloom
 	getExtraData() []byte
 	getDifficulty() uint64
 	getNumber() uint64
@@ -95,7 +95,7 @@ func (h *Header) Beneficiary() Address {
 	return h.inner.getCoinbase()
 }
 
-func (h *Header) LogsBloom() *Bloom {
+func (h *Header) LogsBloom() Bloom {
 	return h.inner.getLogsBloom()
 }
 

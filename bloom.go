@@ -1,52 +1,132 @@
 package ethtypes
 
 import (
-	"github.com/bits-and-blooms/bloom/v3"
+	"encoding/binary"
+
+	"github.com/sig-0/ethtypes/keccak"
 )
 
-const bloomSize = 256 // Bytes
+const BloomByteLength = 256
 
 // Bloom represents an Ethereum bloom filter (for logs)
-type Bloom struct {
-	Filter *bloom.BloomFilter
+type Bloom [BloomByteLength]byte
+
+// NewBloom creates an empty Ethereum bloom filter
+func NewBloom() Bloom {
+	return Bloom{}
 }
 
-// NewBloom creates a new bloom filter with Ethereum's standard parameters
-func NewBloom() *Bloom {
-	// Ethereum uses a 2048-bit bloom filter (256 bytes),
-	// so the false positive rate is adjusted accordingly (num. of hash functions)
-	filter := bloom.NewWithEstimates(bloomSize*8, 0.01) // 2048 items with 1% false positive rate
+// SetBytes sets the bloom filter from a byte slice
+func (b *Bloom) SetBytes(data []byte) {
+	if len(data) != BloomByteLength {
+		return
+	}
 
-	return &Bloom{
-		Filter: filter,
+	copy(b[:], data)
+}
+
+// Add adds the given data to the bloom filter
+func (b *Bloom) Add(data []byte) {
+	// Generate the Keccak-256 hash of the data
+	hash := keccak.New().Hash(data)
+
+	// Set 3 bits in the bloom filter based on the hash
+	for idx := 0; idx < 6; idx += 2 {
+		// Obtain the least significant 11 bits from the pair of bytes (16 bits)
+		bitToSet := uint(binary.BigEndian.Uint16(hash[idx:idx+2])) & 0x07FF
+
+		// Invert the bit position (as in the Ethereum spec)
+		bitIndex := 0x07FF - bitToSet
+
+		// Calculate byte and bit position
+		byteIndex := bitIndex / 8
+		bitPosition := 7 - (bitIndex % 8) // MSB ordering within byte
+
+		// Set the bit
+		b[byteIndex] |= 1 << bitPosition
 	}
 }
 
-// ToBytes serializes the bloom filter.
-// If the serialization fails, it returns an empty bloom
+// Test checks if the given data might be in the bloom filter
+// Returns:
+//   - true: data might be in the set (possible false positive)
+//   - false: data is definitely not in the set
+func (b *Bloom) Test(data []byte) bool {
+	// Generate the Keccak-256 hash of the data
+	hash := keccak.New().Hash(data)
+
+	// Check if all 3 bits are set in the bloom filter
+	for idx := 0; idx < 6; idx += 2 {
+		// Calculate the same bit position as in Add
+		bitToSet := uint(binary.BigEndian.Uint16(hash[idx:idx+2])) & 0x07FF
+		bitIndex := 0x07FF - bitToSet
+
+		// Calculate byte and bit position
+		byteIndex := bitIndex / 8
+		bitPosition := 7 - (bitIndex % 8) // MSB ordering within byte
+
+		// If any of the required bits is not set, return false
+		if (b[byteIndex] & (1 << bitPosition)) == 0 {
+			return false
+		}
+	}
+
+	// All three bits are set
+	return true
+}
+
+// ToBytes returns the bloom filter as a byte slice (256 bytes)
 func (b *Bloom) ToBytes() []byte {
-	data, err := b.Filter.MarshalBinary()
-	if err != nil {
-		return make([]byte, bloomSize)
-	}
+	bytes := make([]byte, BloomByteLength)
+	copy(bytes, b[:])
 
-	return data
+	return bytes
 }
 
-// BytesToBloom converts a byte slice to a Bloom filter.
-// If the deserialization fails, an empty bloom is returned
-func BytesToBloom(data []byte) *Bloom {
-	if len(data) == 0 {
-		return NewBloom()
+// TestLog checks if the given log is in the bloom.
+// It checks against:
+//   - the log address
+//   - each topic
+func (b *Bloom) TestLog(log *Log) bool {
+	// Check if the log address is set
+	if !b.Test(log.Address.ToBytes()) {
+		return false
 	}
 
-	// Create a new bloom filter
+	// Check if all topics are present
+	for _, topic := range log.Topics {
+		if !b.Test(topic.ToBytes()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// LogsBloom obtains the logs bloom from a list of log entries.
+// The address and each topic of a log are added to the bloom filter
+func LogsBloom(logs []*Log) Bloom {
 	b := NewBloom()
 
-	// Parse the data
-	if err := b.Filter.UnmarshalBinary(data); err != nil {
-		return NewBloom()
+	for _, log := range logs {
+		// Add the address
+		b.Add(log.Address.ToBytes())
+
+		// Add each topic
+		for _, topic := range log.Topics {
+			b.Add(topic.ToBytes())
+		}
 	}
+
+	return b
+}
+
+// BytesToBloom sets the bloom filter from a byte slice.
+// If the input is not exactly 256 bytes, an empty bloom is returned
+func BytesToBloom(data []byte) Bloom {
+	b := NewBloom()
+
+	b.SetBytes(data)
 
 	return b
 }

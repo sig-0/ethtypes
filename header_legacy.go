@@ -15,8 +15,8 @@ var _ headerData = (*HeaderLegacy)(nil)
 
 // HeaderLegacy represents the legacy header type (pre EIP-1559)
 type HeaderLegacy struct {
-	LogsBloom        *Bloom  // Bloom filter for quick searching of logs in the block
 	ExtraData        []byte  // Extra data field, often used for creator-encoded information
+	LogsBloom        Bloom   // Bloom filter for quick searching of logs in the block
 	ParentHash       Hash    // Hash of the previous block (the parent block)
 	UncleHash        Hash    // Hash of the uncles block list
 	StateRoot        Hash    // Root of the state trie (Ethereum state at the end of this block)
@@ -64,7 +64,7 @@ func (h *HeaderLegacy) getCoinbase() Address {
 	return h.Coinbase
 }
 
-func (h *HeaderLegacy) getLogsBloom() *Bloom {
+func (h *HeaderLegacy) getLogsBloom() Bloom {
 	return h.LogsBloom
 }
 

@@ -87,6 +87,9 @@ linters:
       period: false
     govet:
       enable-all: true
+      disable:
+        - unusedwrite
+        - shadow
     nakedret:
       max-func-lines: 1
   exclusions:

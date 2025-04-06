@@ -2,10 +2,9 @@ module github.com/sig-0/ethtypes
 
 go 1.23.0
 
-toolchain go1.24.1
+toolchain go1.24.2
 
 require (
-	github.com/bits-and-blooms/bloom/v3 v3.7.0
 	github.com/sig-0/ethcrypto v0.0.0-20250125195019-72ff7705e1e2
 	github.com/sig-0/ethrlp v0.2.1
 	github.com/stretchr/testify v1.10.0
@@ -15,7 +14,6 @@ require (
 )
 
 require (
-	github.com/bits-and-blooms/bitset v1.22.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect
