@@ -1,8 +1,19 @@
 package ethtypes
 
 import (
+	"fmt"
 	"math/big"
 	"sync/atomic"
+
+	ethProto "github.com/sig-0/ethtypes/proto/eth/v1"
+)
+
+type headerType byte
+
+const (
+	headerLegacy  headerType = 0x0
+	headerEIP1559 headerType = 0x1
+	headerEIP4895 headerType = 0x2
 )
 
 // Header is the
@@ -18,6 +29,7 @@ type Header struct {
 type headerData interface {
 	// Common header types //
 
+	getType() headerType
 	getHash() Hash
 	getParentHash() Hash
 	getUncleHash() Hash
@@ -133,4 +145,61 @@ func (h *Header) BaseFeePerGas() *big.Int {
 
 func (h *Header) WithdrawalsRoot() Hash {
 	return h.inner.getWithdrawalsRoot()
+}
+
+// ToProto converts the Header into its proto representation
+func (h *Header) ToProto() (*ethProto.Header, error) {
+	switch h.inner.getType() {
+	case headerLegacy:
+		header := h.inner.(*HeaderLegacy)
+
+		return header.ToProto(), nil
+	case headerEIP1559:
+		header := h.inner.(*HeaderEIP1559)
+
+		return header.ToProto(), nil
+	case headerEIP4895:
+		header := h.inner.(*HeaderEIP4895)
+
+		return header.ToProto(), nil
+	}
+
+	return nil, fmt.Errorf("unknown header type, %x", h.inner.getType())
+}
+
+// FromProto converts a proto Header into a header
+func (h *Header) FromProto(pb *ethProto.Header) error {
+	if pb == nil {
+		return ErrNilProtoHeader
+	}
+
+	switch pb.Payload.(type) {
+	case *ethProto.Header_Eip1559:
+		header := new(HeaderEIP1559)
+
+		if err := header.FromProto(pb); err != nil {
+			return fmt.Errorf("unable to parse EIP1559 header proto: %w", err)
+		}
+
+		h.inner = header
+	case *ethProto.Header_Eip4895:
+		header := new(HeaderEIP4895)
+
+		if err := header.FromProto(pb); err != nil {
+			return fmt.Errorf("unable to parse EIP4895 header proto: %w", err)
+		}
+
+		h.inner = header
+	default:
+		// Legacy header
+		header := new(HeaderLegacy)
+
+		if err := header.FromProto(pb); err != nil {
+			return fmt.Errorf("unable to parse legacy header proto: %w", err)
+		}
+
+		h.inner = header
+	}
+
+	return nil
 }

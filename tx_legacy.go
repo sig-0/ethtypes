@@ -371,7 +371,7 @@ func (tx *TxLegacy) FromProto(pb *txProto.Transaction) error {
 }
 
 // ToProto converts the TxLegacy into its proto Transaction representation
-func (tx *TxLegacy) ToProto() (*txProto.Transaction, error) {
+func (tx *TxLegacy) ToProto() *txProto.Transaction {
 	pb := &txProto.Transaction{
 		Nonce: tx.Nonce,
 		Gas:   tx.Gas,
@@ -411,5 +411,5 @@ func (tx *TxLegacy) ToProto() (*txProto.Transaction, error) {
 		},
 	}
 
-	return pb, nil
+	return pb
 }

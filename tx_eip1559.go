@@ -399,7 +399,7 @@ func (tx *TxEIP1559) FromProto(pb *txProto.Transaction) error {
 }
 
 // ToProto converts the TxEIP1559 into its proto Transaction representation
-func (tx *TxEIP1559) ToProto() (*txProto.Transaction, error) {
+func (tx *TxEIP1559) ToProto() *txProto.Transaction {
 	pb := &txProto.Transaction{
 		Nonce: tx.Nonce,
 		Gas:   tx.Gas,
@@ -452,5 +452,5 @@ func (tx *TxEIP1559) ToProto() (*txProto.Transaction, error) {
 		Eip1559: eip,
 	}
 
-	return pb, nil
+	return pb
 }

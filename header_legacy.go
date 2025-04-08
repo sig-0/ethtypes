@@ -32,6 +32,10 @@ type HeaderLegacy struct {
 	Timestamp        int64   // Timestamp when the block was created
 }
 
+func (h *HeaderLegacy) getType() headerType {
+	return headerLegacy
+}
+
 func (h *HeaderLegacy) getHash() Hash {
 	return BytesToHash(h.SignaturePayload())
 }

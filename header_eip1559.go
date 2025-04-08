@@ -35,6 +35,10 @@ type HeaderEIP1559 struct {
 	Timestamp        int64    // Timestamp when the block was created
 }
 
+func (h *HeaderEIP1559) getType() headerType {
+	return headerEIP1559
+}
+
 func (h *HeaderEIP1559) getHash() Hash {
 	return BytesToHash(h.SignaturePayload())
 }

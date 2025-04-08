@@ -198,15 +198,15 @@ func (t *Transaction) ToProto() (*txProto.Transaction, error) {
 	case TransactionLegacy:
 		tx := t.inner.(*TxLegacy)
 
-		return tx.ToProto()
+		return tx.ToProto(), nil
 	case Transaction2930:
 		tx := t.inner.(*TxEIP2930)
 
-		return tx.ToProto()
+		return tx.ToProto(), nil
 	case Transaction1559:
 		tx := t.inner.(*TxEIP1559)
 
-		return tx.ToProto()
+		return tx.ToProto(), nil
 	}
 
 	return nil, fmt.Errorf("unknown transaction type, %x", t.Type())
