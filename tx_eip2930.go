@@ -283,43 +283,10 @@ func (tx *TxEIP2930) FromRLP(txData []byte) error {
 // SignaturePayload constructs the EIP-2930 transaction signature payload.
 // The signature payload (what's being signed) is the keccak of a specific RLP encoding.
 //
-// RLP structure that needs to be constructed and keccak-ed later:
-// rlp([chainID, nonce, gasPrice, gas, to, value, data, accessList])
-//
-// The type of tx needs to be appended before keccaking (in this case 0x01, for EIP-2930 txs):
-//
 // keccak256(0x01 || rlp([chainID, nonce, gasPrice, gas, to, value, data, accessList]))
 func (tx *TxEIP2930) SignaturePayload() []byte {
-	var rlpPayload [][]byte
-
-	var toAddress []byte
-	if tx.To != nil {
-		toAddress = tx.To.ToBytes()
-	}
-
-	// Encode the access list
-	accessListEnc := new(AccessList).ToRLP()
-
-	if len(tx.AccessList) != 0 {
-		accessListEnc = tx.AccessList.ToRLP()
-	}
-
-	rlpPayload = [][]byte{
-		ethrlp.EncodeBigInt(tx.ChainID),
-		ethrlp.EncodeUint(tx.Nonce),
-		ethrlp.EncodeBigInt(tx.GasPrice),
-		ethrlp.EncodeUint(tx.Gas),
-		ethrlp.EncodeBytes(toAddress),
-		ethrlp.EncodeBigInt(tx.Value),
-		ethrlp.EncodeBytes(tx.Data),
-		accessListEnc,
-	}
-
-	// Perform the RLP encoding of the payload
-	rlpEncoding := ethrlp.EncodeArray(rlpPayload)
-
-	// Concatenate the RLP encoding with the transaction type
-	rlpEncoding = append([]byte{Transaction2930}, rlpEncoding...)
+	// Perform the RLP encoding of the tx
+	rlpEncoding := tx.ToRLP()
 
 	// Keccak the RLP encoding.
 	// This keccak output is what's actually being
@@ -421,4 +388,44 @@ func (tx *TxEIP2930) ToProto() *txProto.Transaction {
 	}
 
 	return pb
+}
+
+// ToRLP encodes the EIP-2930 transaction using RLP encoding.
+//
+// rlp([chainID, nonce, gasPrice, gas, to, value, data, accessList])
+//
+// 0x01 (transaction type) is appended as the first byte of the RLP encoding
+func (tx *TxEIP2930) ToRLP() []byte {
+	var rlpPayload [][]byte
+
+	var toAddress []byte
+	if tx.To != nil {
+		toAddress = tx.To.ToBytes()
+	}
+
+	// Encode the access list
+	accessListEnc := new(AccessList).ToRLP()
+
+	if len(tx.AccessList) != 0 {
+		accessListEnc = tx.AccessList.ToRLP()
+	}
+
+	rlpPayload = [][]byte{
+		ethrlp.EncodeBigInt(tx.ChainID),
+		ethrlp.EncodeUint(tx.Nonce),
+		ethrlp.EncodeBigInt(tx.GasPrice),
+		ethrlp.EncodeUint(tx.Gas),
+		ethrlp.EncodeBytes(toAddress),
+		ethrlp.EncodeBigInt(tx.Value),
+		ethrlp.EncodeBytes(tx.Data),
+		accessListEnc,
+	}
+
+	// Perform the RLP encoding of the payload
+	rlpEncoding := ethrlp.EncodeArray(rlpPayload)
+
+	// Concatenate the RLP encoding with the transaction type
+	rlpEncoding = append([]byte{Transaction2930}, rlpEncoding...)
+
+	return rlpEncoding
 }

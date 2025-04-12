@@ -40,7 +40,7 @@ func (h *HeaderEIP1559) getType() headerType {
 }
 
 func (h *HeaderEIP1559) getHash() Hash {
-	return BytesToHash(h.SignaturePayload())
+	return h.Hash()
 }
 
 func (h *HeaderEIP1559) getParentHash() Hash {
@@ -111,40 +111,14 @@ func (h *HeaderEIP1559) getWithdrawalsRoot() Hash {
 	return ZeroStorageHash // no withdrawals root
 }
 
-// SignaturePayload constructs the EIP-1559 header signature payload.
-// The signature payload (what's being signed) is the keccak of a specific RLP encoding.
-//
-// RLP structure that needs to be constructed and keccak-ed later:
-//
-//   - RLP: [parentHash, unclesHash, coinbase, stateRoot, transactionsRoot,
-//     receiptsRoot, logsBloom, difficulty, number, gasLimit, gasUsed, timestamp,
-//     extraData, mixHash, nonce, baseFeePerGas]
-func (h *HeaderEIP1559) SignaturePayload() []byte {
-	// Construct the RLP data
-	rlpPayload := [][]byte{
-		ethrlp.EncodeBytes(h.ParentHash.ToBytes()),
-		ethrlp.EncodeBytes(h.UncleHash.ToBytes()),
-		ethrlp.EncodeBytes(h.Coinbase.ToBytes()),
-		ethrlp.EncodeBytes(h.StateRoot.ToBytes()),
-		ethrlp.EncodeBytes(h.TransactionsRoot.ToBytes()),
-		ethrlp.EncodeBytes(h.ReceiptsRoot.ToBytes()),
-		ethrlp.EncodeBytes(h.LogsBloom.ToBytes()),
-		ethrlp.EncodeUint(h.Difficulty),
-		ethrlp.EncodeUint(h.Number),
-		ethrlp.EncodeUint(h.GasLimit),
-		ethrlp.EncodeUint(h.GasUsed),
-		ethrlp.EncodeInt(h.Timestamp),
-		ethrlp.EncodeBytes(h.ExtraData),
-		ethrlp.EncodeBytes(h.MixDigest.ToBytes()),
-		ethrlp.EncodeUint(h.Nonce),
-		ethrlp.EncodeBigInt(h.BaseFeePerGas),
-	}
-
+// Hash constructs the EIP-1559 header hash.
+// The hash is the keccak of the header's RLP encoding
+func (h *HeaderEIP1559) Hash() Hash {
 	// Perform the RLP encoding of the payload
-	rlpEncoding := ethrlp.EncodeArray(rlpPayload)
+	rlpEncoding := h.ToRLP()
 
 	// Keccak the RLP encoding
-	return keccak.New().Hash(rlpEncoding)
+	return BytesToHash(keccak.New().Hash(rlpEncoding))
 }
 
 // FromProto converts a protobuf Header to an EIP-1559 header
@@ -214,4 +188,36 @@ func (h *HeaderEIP1559) ToProto() *ethProto.Header {
 	}
 
 	return pb
+}
+
+// ToRLP encodes the EIP-1559 header using RLP encoding.
+//
+//   - RLP: [parentHash, unclesHash, coinbase, stateRoot, transactionsRoot,
+//     receiptsRoot, logsBloom, difficulty, number, gasLimit, gasUsed, timestamp,
+//     extraData, mixHash, nonce, baseFeePerGas]
+func (h *HeaderEIP1559) ToRLP() []byte {
+	// Construct the RLP data
+	rlpPayload := [][]byte{
+		ethrlp.EncodeBytes(h.ParentHash.ToBytes()),
+		ethrlp.EncodeBytes(h.UncleHash.ToBytes()),
+		ethrlp.EncodeBytes(h.Coinbase.ToBytes()),
+		ethrlp.EncodeBytes(h.StateRoot.ToBytes()),
+		ethrlp.EncodeBytes(h.TransactionsRoot.ToBytes()),
+		ethrlp.EncodeBytes(h.ReceiptsRoot.ToBytes()),
+		ethrlp.EncodeBytes(h.LogsBloom.ToBytes()),
+		ethrlp.EncodeUint(h.Difficulty),
+		ethrlp.EncodeUint(h.Number),
+		ethrlp.EncodeUint(h.GasLimit),
+		ethrlp.EncodeUint(h.GasUsed),
+		ethrlp.EncodeInt(h.Timestamp),
+		ethrlp.EncodeBytes(h.ExtraData),
+		ethrlp.EncodeBytes(h.MixDigest.ToBytes()),
+		ethrlp.EncodeUint(h.Nonce),
+		ethrlp.EncodeBigInt(h.BaseFeePerGas),
+	}
+
+	// Perform the RLP encoding of the payload
+	rlpEncoding := ethrlp.EncodeArray(rlpPayload)
+
+	return rlpEncoding
 }

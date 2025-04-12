@@ -277,57 +277,10 @@ var (
 )
 
 // SignaturePayload constructs the legacy transaction signature payload.
-// The signature payload (what's being signed) is the keccak of a specific RLP encoding.
-//
-// RLP structure that needs to be constructed and keccak-ed later:
-//
-// - Pre-EIP-155 (Homestead) RLP: [nonce, gasPrice, gas, to, value, data] (6 elements)
-//
-// - EIP-155 RLP: [nonce, gasPrice, gas, to, value, data, chainID, 0, 0] (9 elements)
+// The signature payload (what's being signed) is the keccak of a specific RLP encoding
 func (tx *TxLegacy) SignaturePayload() []byte {
-	// Check for EIP-155 (V >= 35).
-	// If so, chainID = (V - 35) / 2 or (V - 36) / 2
-	// (we just do int arithmetic to see if chainID > 0)
-	chainID := big.NewInt(0).Sub(tx.V, big35)
-	chainID.Div(chainID, big2) // this is floor((V-35)/2)
-
-	var rlpPayload [][]byte
-
-	var toAddress []byte
-	if tx.To != nil {
-		toAddress = tx.To.ToBytes()
-	}
-
-	// Check how the signing data should be constructed
-	if tx.V.Cmp(big35) >= 0 && chainID.Sign() > 0 {
-		// EIP-155 path
-		// We need to RLP 9 elements
-		rlpPayload = [][]byte{
-			ethrlp.EncodeUint(tx.Nonce),
-			ethrlp.EncodeBigInt(tx.GasPrice),
-			ethrlp.EncodeUint(tx.Gas),
-			ethrlp.EncodeBytes(toAddress),
-			ethrlp.EncodeBigInt(tx.Value),
-			ethrlp.EncodeBytes(tx.Data),
-			ethrlp.EncodeBigInt(chainID),
-			ethrlp.EncodeBigInt(big0),
-			ethrlp.EncodeBigInt(big0),
-		}
-	} else {
-		// Legacy, pre-EIP-155 path
-		// We need to RLP 6 elements
-		rlpPayload = [][]byte{
-			ethrlp.EncodeUint(tx.Nonce),
-			ethrlp.EncodeBigInt(tx.GasPrice),
-			ethrlp.EncodeUint(tx.Gas),
-			ethrlp.EncodeBytes(toAddress),
-			ethrlp.EncodeBigInt(tx.Value),
-			ethrlp.EncodeBytes(tx.Data),
-		}
-	}
-
 	// Perform the RLP encoding of the payload
-	rlpEncoding := ethrlp.EncodeArray(rlpPayload)
+	rlpEncoding := tx.ToRLP()
 
 	// Keccak the RLP encoding.
 	// This keccak output is what's actually being
@@ -412,4 +365,57 @@ func (tx *TxLegacy) ToProto() *txProto.Transaction {
 	}
 
 	return pb
+}
+
+// ToRLP encodes the legacy transaction using RLP encoding.
+//
+// - Pre-EIP-155 (Homestead) RLP: [nonce, gasPrice, gas, to, value, data] (6 elements)
+//
+// - EIP-155 RLP: [nonce, gasPrice, gas, to, value, data, chainID, 0, 0] (9 elements)
+func (tx *TxLegacy) ToRLP() []byte {
+	// Check for EIP-155 (V >= 35).
+	// If so, chainID = (V - 35) / 2 or (V - 36) / 2
+	// (we just do int arithmetic to see if chainID > 0)
+	chainID := big.NewInt(0).Sub(tx.V, big35)
+	chainID.Div(chainID, big2) // this is floor((V-35)/2)
+
+	var rlpPayload [][]byte
+
+	var toAddress []byte
+	if tx.To != nil {
+		toAddress = tx.To.ToBytes()
+	}
+
+	// Check how the signing data should be constructed
+	if tx.V.Cmp(big35) >= 0 && chainID.Sign() > 0 {
+		// EIP-155 path
+		// We need to RLP 9 elements
+		rlpPayload = [][]byte{
+			ethrlp.EncodeUint(tx.Nonce),
+			ethrlp.EncodeBigInt(tx.GasPrice),
+			ethrlp.EncodeUint(tx.Gas),
+			ethrlp.EncodeBytes(toAddress),
+			ethrlp.EncodeBigInt(tx.Value),
+			ethrlp.EncodeBytes(tx.Data),
+			ethrlp.EncodeBigInt(chainID),
+			ethrlp.EncodeBigInt(big0),
+			ethrlp.EncodeBigInt(big0),
+		}
+	} else {
+		// Legacy, pre-EIP-155 path
+		// We need to RLP 6 elements
+		rlpPayload = [][]byte{
+			ethrlp.EncodeUint(tx.Nonce),
+			ethrlp.EncodeBigInt(tx.GasPrice),
+			ethrlp.EncodeUint(tx.Gas),
+			ethrlp.EncodeBytes(toAddress),
+			ethrlp.EncodeBigInt(tx.Value),
+			ethrlp.EncodeBytes(tx.Data),
+		}
+	}
+
+	// Perform the RLP encoding of the payload
+	rlpEncoding := ethrlp.EncodeArray(rlpPayload)
+
+	return rlpEncoding
 }

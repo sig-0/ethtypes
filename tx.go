@@ -249,3 +249,23 @@ func (t *Transaction) FromProto(pb *txProto.Transaction) error {
 
 	return nil
 }
+
+// ToRLP encodes the transaction using RLP encoding
+func (t *Transaction) ToRLP() ([]byte, error) {
+	switch t.Type() {
+	case TransactionLegacy:
+		tx := t.inner.(*TxLegacy)
+
+		return tx.ToRLP(), nil
+	case Transaction2930:
+		tx := t.inner.(*TxEIP2930)
+
+		return tx.ToRLP(), nil
+	case Transaction1559:
+		tx := t.inner.(*TxEIP1559)
+
+		return tx.ToRLP(), nil
+	}
+
+	return nil, fmt.Errorf("unknown transaction type, %x", t.Type())
+}

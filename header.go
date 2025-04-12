@@ -79,6 +79,26 @@ func (h *Header) Hash() Hash {
 	return hash
 }
 
+// ToRLP encodes the header using RLP encoding
+func (h *Header) ToRLP() ([]byte, error) {
+	switch h.inner.getType() {
+	case headerLegacy:
+		header := h.inner.(*HeaderLegacy)
+
+		return header.ToRLP(), nil
+	case headerEIP1559:
+		header := h.inner.(*HeaderEIP1559)
+
+		return header.ToRLP(), nil
+	case headerEIP4895:
+		header := h.inner.(*HeaderEIP4895)
+
+		return header.ToRLP(), nil
+	}
+
+	return nil, fmt.Errorf("unknown header type, %x", h.inner.getType())
+}
+
 func (h *Header) ParentHash() Hash {
 	return h.inner.getParentHash()
 }
