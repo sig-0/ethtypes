@@ -34,6 +34,14 @@ func (a *Account) IsEOA() bool {
 	return a.StorageRoot == ZeroStorageHash && a.CodeHash == ZeroCodeHash
 }
 
+// IsEmpty returns true if an account:
+//   - has a zero nonce
+//   - has a zero balance
+//   - has a zero code hash
+func (a *Account) IsEmpty() bool {
+	return len(a.Balance.Bits()) == 0 && a.Nonce == 0 && a.CodeHash == ZeroCodeHash
+}
+
 // FromProto loads the account data from the given proto representation
 func (a *Account) FromProto(protoAccount *ethProto.Account) error {
 	if protoAccount == nil {
