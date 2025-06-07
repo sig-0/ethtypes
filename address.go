@@ -1,6 +1,7 @@
 package ethtypes
 
 import (
+	"bytes"
 	"strings"
 	"unicode"
 
@@ -30,6 +31,11 @@ func (a Address) ToString() string {
 // a bytes representation
 func (a Address) ToBytes() []byte {
 	return a[:]
+}
+
+// Equals checks if two addresses are equal
+func (a Address) Equals(b Address) bool {
+	return bytes.Equal(a[:], b[:])
 }
 
 // stringToHexBytes converts the input string
