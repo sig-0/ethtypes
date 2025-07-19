@@ -157,6 +157,7 @@ func (h *HeaderEIP4895) FromProto(pb *ethProto.Header) error {
 // ToProto converts an EIP-4895 header proto to a protobuf Header
 func (h *HeaderEIP4895) ToProto() *ethProto.Header {
 	pb := &ethProto.Header{
+		Hash:             h.Hash().ToBytes(),
 		ParentHash:       h.ParentHash.ToBytes(),
 		UnclesHash:       h.UncleHash.ToBytes(),
 		StateRoot:        h.StateRoot.ToBytes(),

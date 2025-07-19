@@ -102,12 +102,12 @@ func (t *Transaction) To() *Address {
 // of the transaction, if any are set.
 //
 // Assumes transaction signature values (V, R, S) are verified
-func (t *Transaction) From() (*Address, error) {
+func (t *Transaction) From() (Address, error) {
 	// Check if the sender was derived in the past
 	if fromRaw := t.from.Load(); fromRaw != nil {
 		from, _ := fromRaw.(Address)
 
-		return &from, nil
+		return from, nil
 	}
 
 	var (
@@ -120,7 +120,7 @@ func (t *Transaction) From() (*Address, error) {
 
 	recoveredAddress, err := secp256k1.ECRecover(payload)
 	if err != nil {
-		return nil, fmt.Errorf("unable to ECRECOVER the address: %w", err)
+		return ZeroAddress, fmt.Errorf("unable to ECRECOVER the address: %w", err)
 	}
 
 	// Save the derived address for future calls
@@ -128,7 +128,7 @@ func (t *Transaction) From() (*Address, error) {
 
 	t.from.Store(address)
 
-	return &address, nil
+	return address, nil
 }
 
 func (t *Transaction) Value() *big.Int {

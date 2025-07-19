@@ -148,6 +148,7 @@ func (h *HeaderLegacy) FromProto(pb *ethProto.Header) error {
 // ToProto converts a legacy header proto to a protobuf Header
 func (h *HeaderLegacy) ToProto() *ethProto.Header {
 	pb := &ethProto.Header{
+		Hash:             h.Hash().ToBytes(),
 		ParentHash:       h.ParentHash.ToBytes(),
 		UnclesHash:       h.UncleHash.ToBytes(),
 		StateRoot:        h.StateRoot.ToBytes(),

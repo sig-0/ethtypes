@@ -14,29 +14,30 @@ message Block {
 
 // Header contains common fields for all block headers, plus an optional payload for type-specific details
 message Header {
-  uint64 number = 1;              // The block number (height of the block in the chain)
-  bytes coinbase = 2;             // Address of the block creator
-  int64 timestamp = 3;            // Timestamp when the block was created
-  bytes receipts_root = 4;        // Root of the receipts trie (all transaction receipts for this block)
-  uint64 gas_used = 5;            // Total gas used by all transactions in the block
-  uint64 gas_limit = 6;           // Gas limit for the block
-  bytes mix_digest = 7;           // Hash used in the proof-of-work algorithm (before Ethereum 2.0)
-  bytes extra_data = 8;           // Extra data field, often used for creator-encoded information
-  bytes logs_bloom = 9;           // Bloom filter for quick searching of logs in the block
-  uint64 difficulty = 10;         // The difficulty of mining the block
-  bytes parent_hash = 11;         // Hash of the previous block (the parent block)
-  bytes state_root = 12;          // Root of the state trie (Ethereum state at the end of this block)
-  bytes transactions_root = 13;   // Root of the transactions trie (all transactions for this block)
-  uint64 nonce = 14;              // Random value used by the miner in proof-of-work (before Ethereum 2.0)
-  bytes uncles_hash = 15;         // Hash of the uncles block list
+  bytes hash = 1;                 // The block hash (calculated)
+  uint64 number = 2;              // The block number (height of the block in the chain)
+  bytes coinbase = 3;             // Address of the block creator
+  int64 timestamp = 4;            // Timestamp when the block was created
+  bytes receipts_root = 5;        // Root of the receipts trie (all transaction receipts for this block)
+  uint64 gas_used = 6;            // Total gas used by all transactions in the block
+  uint64 gas_limit = 7;           // Gas limit for the block
+  bytes mix_digest = 8;           // Hash used in the proof-of-work algorithm (before Ethereum 2.0)
+  bytes extra_data = 9;           // Extra data field, often used for creator-encoded information
+  bytes logs_bloom = 10;           // Bloom filter for quick searching of logs in the block
+  uint64 difficulty = 11;         // The difficulty of mining the block
+  bytes parent_hash = 12;         // Hash of the previous block (the parent block)
+  bytes state_root = 13;          // Root of the state trie (Ethereum state at the end of this block)
+  bytes transactions_root = 14;   // Root of the transactions trie (all transactions for this block)
+  uint64 nonce = 15;              // Random value used by the miner in proof-of-work (before Ethereum 2.0)
+  bytes uncles_hash = 16;         // Hash of the uncles block list
 
   // --- Type-specific fields ---
   oneof payload {
     // Fields specific to an EIP-1559 block header
-    EIP1559Payload eip1559 = 16;
+    EIP1559Payload eip1559 = 17;
 
     // Fields specific to an EIP-4895 block header
-    EIP4895Payload eip4895 = 17;
+    EIP4895Payload eip4895 = 18;
   }
 }
 
