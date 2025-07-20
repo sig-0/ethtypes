@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/sig-0/ethrlp"
 	"github.com/sig-0/ethtypes/keccak"
 	ethProto "github.com/sig-0/ethtypes/proto/eth/v1"
 )
@@ -14,6 +15,9 @@ var (
 	// ZeroStorageHash is the historical Ethereum MPT value (empty trie root)
 	ZeroStorageHash = StringToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 	ZeroCodeHash    = BytesToHash(keccak.New().Hash([]byte{}))
+
+	// ZeroOmmerHash is the historical Ethereum MPT value (empty ommers) (keccak256(rlp([]))
+	ZeroOmmerHash = BytesToHash(keccak.New().Hash(ethrlp.EncodeArray([][]byte{})))
 )
 
 // Account is a single Ethereum account representation
