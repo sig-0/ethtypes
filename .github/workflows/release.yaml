@@ -11,36 +11,20 @@ permissions:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    env:
-      GOPRIVATE: github.com/sig-0/*
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # needed for the changelog
 
       - uses: actions/setup-go@v7
         with:
           go-version: 1.27.x
           cache: true
 
-      - name: Add SSH Go Module Private Key
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-          ssh-add - <<< "${{ secrets.GO_MODULE_PRIVATE_KEY }}"
-          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV   
-
-      - name: Setup access for private go modules
-        run: |
-          git config --global url."ssh://git@github.com/".insteadOf https://github.com/        
-
       - uses: goreleaser/goreleaser-action@v7
         with:
-          version: latest
+          version: "~> v2"
           args: release --clean --config ./.github/goreleaser.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
