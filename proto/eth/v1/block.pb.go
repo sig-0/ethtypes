@@ -26,6 +26,8 @@ type Block struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Header        *Header                `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`             // Associated block header
 	Transactions  []*Transaction         `protobuf:"bytes,2,rep,name=transactions,proto3" json:"transactions,omitempty"` // List of transactions included in the block
+	Withdrawals   []*Withdrawal          `protobuf:"bytes,3,rep,name=withdrawals,proto3" json:"withdrawals,omitempty"`   // List of validator withdrawals included in the block
+	Uncles        []*Header              `protobuf:"bytes,4,rep,name=uncles,proto3" json:"uncles,omitempty"`             // List of uncle headers included in the block
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -74,6 +76,20 @@ func (x *Block) GetTransactions() []*Transaction {
 	return nil
 }
 
+func (x *Block) GetWithdrawals() []*Withdrawal {
+	if x != nil {
+		return x.Withdrawals
+	}
+	return nil
+}
+
+func (x *Block) GetUncles() []*Header {
+	if x != nil {
+		return x.Uncles
+	}
+	return nil
+}
+
 // Header contains common fields for all block headers, plus an optional payload for type-specific details
 type Header struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
@@ -99,6 +115,8 @@ type Header struct {
 	//
 	//	*Header_Eip1559
 	//	*Header_Eip4895
+	//	*Header_Eip4844
+	//	*Header_Eip7685
 	Payload       isHeader_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -271,6 +289,24 @@ func (x *Header) GetEip4895() *EIP4895Payload {
 	return nil
 }
 
+func (x *Header) GetEip4844() *EIP4844Payload {
+	if x != nil {
+		if x, ok := x.Payload.(*Header_Eip4844); ok {
+			return x.Eip4844
+		}
+	}
+	return nil
+}
+
+func (x *Header) GetEip7685() *EIP7685Payload {
+	if x != nil {
+		if x, ok := x.Payload.(*Header_Eip7685); ok {
+			return x.Eip7685
+		}
+	}
+	return nil
+}
+
 type isHeader_Payload interface {
 	isHeader_Payload()
 }
@@ -285,9 +321,23 @@ type Header_Eip4895 struct {
 	Eip4895 *EIP4895Payload `protobuf:"bytes,18,opt,name=eip4895,proto3,oneof"`
 }
 
+type Header_Eip4844 struct {
+	// Fields specific to an EIP-4844 block header
+	Eip4844 *EIP4844Payload `protobuf:"bytes,19,opt,name=eip4844,proto3,oneof"`
+}
+
+type Header_Eip7685 struct {
+	// Fields specific to an EIP-7685 block header
+	Eip7685 *EIP7685Payload `protobuf:"bytes,20,opt,name=eip7685,proto3,oneof"`
+}
+
 func (*Header_Eip1559) isHeader_Payload() {}
 
 func (*Header_Eip4895) isHeader_Payload() {}
+
+func (*Header_Eip4844) isHeader_Payload() {}
+
+func (*Header_Eip7685) isHeader_Payload() {}
 
 // EIP1559Payload contains gas fee information relating to
 // London hardfork transactions
@@ -391,6 +441,173 @@ func (x *EIP4895Payload) GetWithdrawalsRoot() []byte {
 	return nil
 }
 
+// EIP4844Payload contains blob gas and beacon block information relating to
+// Cancun hardfork blocks
+// https://eips.ethereum.org/EIPS/eip-4844
+// https://eips.ethereum.org/EIPS/eip-4788
+type EIP4844Payload struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	BaseFeePerGas         []byte                 `protobuf:"bytes,1,opt,name=base_fee_per_gas,json=baseFeePerGas,proto3" json:"base_fee_per_gas,omitempty"`                         // Base fee per gas unit for EIP-1559 blocks
+	WithdrawalsRoot       []byte                 `protobuf:"bytes,2,opt,name=withdrawals_root,json=withdrawalsRoot,proto3" json:"withdrawals_root,omitempty"`                       // Root of the withdrawals trie (for withdrawals from validators)
+	BlobGasUsed           uint64                 `protobuf:"varint,3,opt,name=blob_gas_used,json=blobGasUsed,proto3" json:"blob_gas_used,omitempty"`                                // Total blob gas used by all transactions in the block
+	ExcessBlobGas         uint64                 `protobuf:"varint,4,opt,name=excess_blob_gas,json=excessBlobGas,proto3" json:"excess_blob_gas,omitempty"`                          // Excess blob gas, used to calculate the blob base fee
+	ParentBeaconBlockRoot []byte                 `protobuf:"bytes,5,opt,name=parent_beacon_block_root,json=parentBeaconBlockRoot,proto3" json:"parent_beacon_block_root,omitempty"` // Root of the parent beacon block
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *EIP4844Payload) Reset() {
+	*x = EIP4844Payload{}
+	mi := &file_eth_v1_block_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EIP4844Payload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EIP4844Payload) ProtoMessage() {}
+
+func (x *EIP4844Payload) ProtoReflect() protoreflect.Message {
+	mi := &file_eth_v1_block_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EIP4844Payload.ProtoReflect.Descriptor instead.
+func (*EIP4844Payload) Descriptor() ([]byte, []int) {
+	return file_eth_v1_block_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *EIP4844Payload) GetBaseFeePerGas() []byte {
+	if x != nil {
+		return x.BaseFeePerGas
+	}
+	return nil
+}
+
+func (x *EIP4844Payload) GetWithdrawalsRoot() []byte {
+	if x != nil {
+		return x.WithdrawalsRoot
+	}
+	return nil
+}
+
+func (x *EIP4844Payload) GetBlobGasUsed() uint64 {
+	if x != nil {
+		return x.BlobGasUsed
+	}
+	return 0
+}
+
+func (x *EIP4844Payload) GetExcessBlobGas() uint64 {
+	if x != nil {
+		return x.ExcessBlobGas
+	}
+	return 0
+}
+
+func (x *EIP4844Payload) GetParentBeaconBlockRoot() []byte {
+	if x != nil {
+		return x.ParentBeaconBlockRoot
+	}
+	return nil
+}
+
+// EIP7685Payload contains execution layer requests information relating to
+// Prague hardfork blocks
+// https://eips.ethereum.org/EIPS/eip-7685
+type EIP7685Payload struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	BaseFeePerGas         []byte                 `protobuf:"bytes,1,opt,name=base_fee_per_gas,json=baseFeePerGas,proto3" json:"base_fee_per_gas,omitempty"`                         // Base fee per gas unit for EIP-1559 blocks
+	WithdrawalsRoot       []byte                 `protobuf:"bytes,2,opt,name=withdrawals_root,json=withdrawalsRoot,proto3" json:"withdrawals_root,omitempty"`                       // Root of the withdrawals trie (for withdrawals from validators)
+	BlobGasUsed           uint64                 `protobuf:"varint,3,opt,name=blob_gas_used,json=blobGasUsed,proto3" json:"blob_gas_used,omitempty"`                                // Total blob gas used by all transactions in the block
+	ExcessBlobGas         uint64                 `protobuf:"varint,4,opt,name=excess_blob_gas,json=excessBlobGas,proto3" json:"excess_blob_gas,omitempty"`                          // Excess blob gas, used to calculate the blob base fee
+	ParentBeaconBlockRoot []byte                 `protobuf:"bytes,5,opt,name=parent_beacon_block_root,json=parentBeaconBlockRoot,proto3" json:"parent_beacon_block_root,omitempty"` // Root of the parent beacon block
+	RequestsHash          []byte                 `protobuf:"bytes,6,opt,name=requests_hash,json=requestsHash,proto3" json:"requests_hash,omitempty"`                                // Hash of the execution layer requests in the block
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *EIP7685Payload) Reset() {
+	*x = EIP7685Payload{}
+	mi := &file_eth_v1_block_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EIP7685Payload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EIP7685Payload) ProtoMessage() {}
+
+func (x *EIP7685Payload) ProtoReflect() protoreflect.Message {
+	mi := &file_eth_v1_block_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EIP7685Payload.ProtoReflect.Descriptor instead.
+func (*EIP7685Payload) Descriptor() ([]byte, []int) {
+	return file_eth_v1_block_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *EIP7685Payload) GetBaseFeePerGas() []byte {
+	if x != nil {
+		return x.BaseFeePerGas
+	}
+	return nil
+}
+
+func (x *EIP7685Payload) GetWithdrawalsRoot() []byte {
+	if x != nil {
+		return x.WithdrawalsRoot
+	}
+	return nil
+}
+
+func (x *EIP7685Payload) GetBlobGasUsed() uint64 {
+	if x != nil {
+		return x.BlobGasUsed
+	}
+	return 0
+}
+
+func (x *EIP7685Payload) GetExcessBlobGas() uint64 {
+	if x != nil {
+		return x.ExcessBlobGas
+	}
+	return 0
+}
+
+func (x *EIP7685Payload) GetParentBeaconBlockRoot() []byte {
+	if x != nil {
+		return x.ParentBeaconBlockRoot
+	}
+	return nil
+}
+
+func (x *EIP7685Payload) GetRequestsHash() []byte {
+	if x != nil {
+		return x.RequestsHash
+	}
+	return nil
+}
+
 // Withdrawal is a withdrawal from a validator in Ethereum 2.0
 type Withdrawal struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
@@ -404,7 +621,7 @@ type Withdrawal struct {
 
 func (x *Withdrawal) Reset() {
 	*x = Withdrawal{}
-	mi := &file_eth_v1_block_proto_msgTypes[4]
+	mi := &file_eth_v1_block_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -416,7 +633,7 @@ func (x *Withdrawal) String() string {
 func (*Withdrawal) ProtoMessage() {}
 
 func (x *Withdrawal) ProtoReflect() protoreflect.Message {
-	mi := &file_eth_v1_block_proto_msgTypes[4]
+	mi := &file_eth_v1_block_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -429,7 +646,7 @@ func (x *Withdrawal) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Withdrawal.ProtoReflect.Descriptor instead.
 func (*Withdrawal) Descriptor() ([]byte, []int) {
-	return file_eth_v1_block_proto_rawDescGZIP(), []int{4}
+	return file_eth_v1_block_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Withdrawal) GetIndex() uint64 {
@@ -464,10 +681,12 @@ var File_eth_v1_block_proto protoreflect.FileDescriptor
 
 const file_eth_v1_block_proto_rawDesc = "" +
 	"\n" +
-	"\x12eth/v1/block.proto\x12\x06eth.v1\x1a\x0feth/v1/tx.proto\"h\n" +
+	"\x12eth/v1/block.proto\x12\x06eth.v1\x1a\x0feth/v1/tx.proto\"\xc6\x01\n" +
 	"\x05Block\x12&\n" +
 	"\x06header\x18\x01 \x01(\v2\x0e.eth.v1.HeaderR\x06header\x127\n" +
-	"\ftransactions\x18\x02 \x03(\v2\x13.eth.v1.TransactionR\ftransactions\"\xdf\x04\n" +
+	"\ftransactions\x18\x02 \x03(\v2\x13.eth.v1.TransactionR\ftransactions\x124\n" +
+	"\vwithdrawals\x18\x03 \x03(\v2\x12.eth.v1.WithdrawalR\vwithdrawals\x12&\n" +
+	"\x06uncles\x18\x04 \x03(\v2\x0e.eth.v1.HeaderR\x06uncles\"\xc7\x05\n" +
 	"\x06Header\x12\x12\n" +
 	"\x04hash\x18\x01 \x01(\fR\x04hash\x12\x16\n" +
 	"\x06number\x18\x02 \x01(\x04R\x06number\x12\x1a\n" +
@@ -495,13 +714,28 @@ const file_eth_v1_block_proto_rawDesc = "" +
 	"\vuncles_hash\x18\x10 \x01(\fR\n" +
 	"unclesHash\x122\n" +
 	"\aeip1559\x18\x11 \x01(\v2\x16.eth.v1.EIP1559PayloadH\x00R\aeip1559\x122\n" +
-	"\aeip4895\x18\x12 \x01(\v2\x16.eth.v1.EIP4895PayloadH\x00R\aeip4895B\t\n" +
+	"\aeip4895\x18\x12 \x01(\v2\x16.eth.v1.EIP4895PayloadH\x00R\aeip4895\x122\n" +
+	"\aeip4844\x18\x13 \x01(\v2\x16.eth.v1.EIP4844PayloadH\x00R\aeip4844\x122\n" +
+	"\aeip7685\x18\x14 \x01(\v2\x16.eth.v1.EIP7685PayloadH\x00R\aeip7685B\t\n" +
 	"\apayload\"9\n" +
 	"\x0eEIP1559Payload\x12'\n" +
 	"\x10base_fee_per_gas\x18\x01 \x01(\fR\rbaseFeePerGas\"d\n" +
 	"\x0eEIP4895Payload\x12'\n" +
 	"\x10base_fee_per_gas\x18\x01 \x01(\fR\rbaseFeePerGas\x12)\n" +
-	"\x10withdrawals_root\x18\x02 \x01(\fR\x0fwithdrawalsRoot\"\x81\x01\n" +
+	"\x10withdrawals_root\x18\x02 \x01(\fR\x0fwithdrawalsRoot\"\xe9\x01\n" +
+	"\x0eEIP4844Payload\x12'\n" +
+	"\x10base_fee_per_gas\x18\x01 \x01(\fR\rbaseFeePerGas\x12)\n" +
+	"\x10withdrawals_root\x18\x02 \x01(\fR\x0fwithdrawalsRoot\x12\"\n" +
+	"\rblob_gas_used\x18\x03 \x01(\x04R\vblobGasUsed\x12&\n" +
+	"\x0fexcess_blob_gas\x18\x04 \x01(\x04R\rexcessBlobGas\x127\n" +
+	"\x18parent_beacon_block_root\x18\x05 \x01(\fR\x15parentBeaconBlockRoot\"\x8e\x02\n" +
+	"\x0eEIP7685Payload\x12'\n" +
+	"\x10base_fee_per_gas\x18\x01 \x01(\fR\rbaseFeePerGas\x12)\n" +
+	"\x10withdrawals_root\x18\x02 \x01(\fR\x0fwithdrawalsRoot\x12\"\n" +
+	"\rblob_gas_used\x18\x03 \x01(\x04R\vblobGasUsed\x12&\n" +
+	"\x0fexcess_blob_gas\x18\x04 \x01(\x04R\rexcessBlobGas\x127\n" +
+	"\x18parent_beacon_block_root\x18\x05 \x01(\fR\x15parentBeaconBlockRoot\x12#\n" +
+	"\rrequests_hash\x18\x06 \x01(\fR\frequestsHash\"\x81\x01\n" +
 	"\n" +
 	"Withdrawal\x12\x14\n" +
 	"\x05index\x18\x01 \x01(\x04R\x05index\x12'\n" +
@@ -521,25 +755,31 @@ func file_eth_v1_block_proto_rawDescGZIP() []byte {
 	return file_eth_v1_block_proto_rawDescData
 }
 
-var file_eth_v1_block_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_eth_v1_block_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_eth_v1_block_proto_goTypes = []any{
 	(*Block)(nil),          // 0: eth.v1.Block
 	(*Header)(nil),         // 1: eth.v1.Header
 	(*EIP1559Payload)(nil), // 2: eth.v1.EIP1559Payload
 	(*EIP4895Payload)(nil), // 3: eth.v1.EIP4895Payload
-	(*Withdrawal)(nil),     // 4: eth.v1.Withdrawal
-	(*Transaction)(nil),    // 5: eth.v1.Transaction
+	(*EIP4844Payload)(nil), // 4: eth.v1.EIP4844Payload
+	(*EIP7685Payload)(nil), // 5: eth.v1.EIP7685Payload
+	(*Withdrawal)(nil),     // 6: eth.v1.Withdrawal
+	(*Transaction)(nil),    // 7: eth.v1.Transaction
 }
 var file_eth_v1_block_proto_depIdxs = []int32{
 	1, // 0: eth.v1.Block.header:type_name -> eth.v1.Header
-	5, // 1: eth.v1.Block.transactions:type_name -> eth.v1.Transaction
-	2, // 2: eth.v1.Header.eip1559:type_name -> eth.v1.EIP1559Payload
-	3, // 3: eth.v1.Header.eip4895:type_name -> eth.v1.EIP4895Payload
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	7, // 1: eth.v1.Block.transactions:type_name -> eth.v1.Transaction
+	6, // 2: eth.v1.Block.withdrawals:type_name -> eth.v1.Withdrawal
+	1, // 3: eth.v1.Block.uncles:type_name -> eth.v1.Header
+	2, // 4: eth.v1.Header.eip1559:type_name -> eth.v1.EIP1559Payload
+	3, // 5: eth.v1.Header.eip4895:type_name -> eth.v1.EIP4895Payload
+	4, // 6: eth.v1.Header.eip4844:type_name -> eth.v1.EIP4844Payload
+	5, // 7: eth.v1.Header.eip7685:type_name -> eth.v1.EIP7685Payload
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_eth_v1_block_proto_init() }
@@ -551,6 +791,8 @@ func file_eth_v1_block_proto_init() {
 	file_eth_v1_block_proto_msgTypes[1].OneofWrappers = []any{
 		(*Header_Eip1559)(nil),
 		(*Header_Eip4895)(nil),
+		(*Header_Eip4844)(nil),
+		(*Header_Eip7685)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -558,7 +800,7 @@ func file_eth_v1_block_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_eth_v1_block_proto_rawDesc), len(file_eth_v1_block_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

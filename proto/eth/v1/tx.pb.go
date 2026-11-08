@@ -41,6 +41,8 @@ type Transaction struct {
 	//	*Transaction_Legacy
 	//	*Transaction_Eip1559
 	//	*Transaction_Eip2930
+	//	*Transaction_Eip7702
+	//	*Transaction_Eip4844
 	Payload       isTransaction_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -180,6 +182,24 @@ func (x *Transaction) GetEip2930() *EIP2930 {
 	return nil
 }
 
+func (x *Transaction) GetEip7702() *EIP7702 {
+	if x != nil {
+		if x, ok := x.Payload.(*Transaction_Eip7702); ok {
+			return x.Eip7702
+		}
+	}
+	return nil
+}
+
+func (x *Transaction) GetEip4844() *EIP4844 {
+	if x != nil {
+		if x, ok := x.Payload.(*Transaction_Eip4844); ok {
+			return x.Eip4844
+		}
+	}
+	return nil
+}
+
 type isTransaction_Payload interface {
 	isTransaction_Payload()
 }
@@ -196,11 +216,23 @@ type Transaction_Eip2930 struct {
 	Eip2930 *EIP2930 `protobuf:"bytes,13,opt,name=eip2930,proto3,oneof"` // EIP-2930 transaction details with access lists
 }
 
+type Transaction_Eip7702 struct {
+	Eip7702 *EIP7702 `protobuf:"bytes,14,opt,name=eip7702,proto3,oneof"` // EIP-7702 transaction details with authorization lists
+}
+
+type Transaction_Eip4844 struct {
+	Eip4844 *EIP4844 `protobuf:"bytes,15,opt,name=eip4844,proto3,oneof"` // EIP-4844 transaction details with blobs
+}
+
 func (*Transaction_Legacy) isTransaction_Payload() {}
 
 func (*Transaction_Eip1559) isTransaction_Payload() {}
 
 func (*Transaction_Eip2930) isTransaction_Payload() {}
+
+func (*Transaction_Eip7702) isTransaction_Payload() {}
+
+func (*Transaction_Eip4844) isTransaction_Payload() {}
 
 // Additional fields for a legacy transaction
 type Legacy struct {
@@ -430,13 +462,260 @@ func (x *AccessListEntry) GetStorageKeys() [][]byte {
 	return nil
 }
 
+// Additional fields for an EIP-4844 transaction
+type EIP4844 struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	MaxPriorityFeePerGas []byte                 `protobuf:"bytes,1,opt,name=max_priority_fee_per_gas,json=maxPriorityFeePerGas,proto3" json:"max_priority_fee_per_gas,omitempty"` // Maximum tip a user is willing to pay to the block creator
+	MaxFeePerGas         []byte                 `protobuf:"bytes,2,opt,name=max_fee_per_gas,json=maxFeePerGas,proto3" json:"max_fee_per_gas,omitempty"`                           // Maximum total fee per gas unit
+	AccessList           []*AccessListEntry     `protobuf:"bytes,3,rep,name=access_list,json=accessList,proto3" json:"access_list,omitempty"`                                     // List of contract addresses and storage keys accessed
+	ChainId              []byte                 `protobuf:"bytes,4,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`                                              // The chain ID of the transaction, if any
+	MaxFeePerBlobGas     []byte                 `protobuf:"bytes,5,opt,name=max_fee_per_blob_gas,json=maxFeePerBlobGas,proto3" json:"max_fee_per_blob_gas,omitempty"`             // Maximum total fee per blob gas unit
+	BlobVersionedHashes  [][]byte               `protobuf:"bytes,6,rep,name=blob_versioned_hashes,json=blobVersionedHashes,proto3" json:"blob_versioned_hashes,omitempty"`        // Versioned hashes of the blobs carried by the transaction
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *EIP4844) Reset() {
+	*x = EIP4844{}
+	mi := &file_eth_v1_tx_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EIP4844) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EIP4844) ProtoMessage() {}
+
+func (x *EIP4844) ProtoReflect() protoreflect.Message {
+	mi := &file_eth_v1_tx_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EIP4844.ProtoReflect.Descriptor instead.
+func (*EIP4844) Descriptor() ([]byte, []int) {
+	return file_eth_v1_tx_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *EIP4844) GetMaxPriorityFeePerGas() []byte {
+	if x != nil {
+		return x.MaxPriorityFeePerGas
+	}
+	return nil
+}
+
+func (x *EIP4844) GetMaxFeePerGas() []byte {
+	if x != nil {
+		return x.MaxFeePerGas
+	}
+	return nil
+}
+
+func (x *EIP4844) GetAccessList() []*AccessListEntry {
+	if x != nil {
+		return x.AccessList
+	}
+	return nil
+}
+
+func (x *EIP4844) GetChainId() []byte {
+	if x != nil {
+		return x.ChainId
+	}
+	return nil
+}
+
+func (x *EIP4844) GetMaxFeePerBlobGas() []byte {
+	if x != nil {
+		return x.MaxFeePerBlobGas
+	}
+	return nil
+}
+
+func (x *EIP4844) GetBlobVersionedHashes() [][]byte {
+	if x != nil {
+		return x.BlobVersionedHashes
+	}
+	return nil
+}
+
+// Additional fields for an EIP-7702 transaction
+type EIP7702 struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	MaxPriorityFeePerGas []byte                 `protobuf:"bytes,1,opt,name=max_priority_fee_per_gas,json=maxPriorityFeePerGas,proto3" json:"max_priority_fee_per_gas,omitempty"` // Maximum tip a user is willing to pay to the block creator
+	MaxFeePerGas         []byte                 `protobuf:"bytes,2,opt,name=max_fee_per_gas,json=maxFeePerGas,proto3" json:"max_fee_per_gas,omitempty"`                           // Maximum total fee per gas unit
+	AccessList           []*AccessListEntry     `protobuf:"bytes,3,rep,name=access_list,json=accessList,proto3" json:"access_list,omitempty"`                                     // List of contract addresses and storage keys accessed
+	ChainId              []byte                 `protobuf:"bytes,4,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`                                              // The chain ID of the transaction, if any
+	AuthorizationList    []*Authorization       `protobuf:"bytes,5,rep,name=authorization_list,json=authorizationList,proto3" json:"authorization_list,omitempty"`                // List of signed code delegations
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *EIP7702) Reset() {
+	*x = EIP7702{}
+	mi := &file_eth_v1_tx_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EIP7702) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EIP7702) ProtoMessage() {}
+
+func (x *EIP7702) ProtoReflect() protoreflect.Message {
+	mi := &file_eth_v1_tx_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EIP7702.ProtoReflect.Descriptor instead.
+func (*EIP7702) Descriptor() ([]byte, []int) {
+	return file_eth_v1_tx_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *EIP7702) GetMaxPriorityFeePerGas() []byte {
+	if x != nil {
+		return x.MaxPriorityFeePerGas
+	}
+	return nil
+}
+
+func (x *EIP7702) GetMaxFeePerGas() []byte {
+	if x != nil {
+		return x.MaxFeePerGas
+	}
+	return nil
+}
+
+func (x *EIP7702) GetAccessList() []*AccessListEntry {
+	if x != nil {
+		return x.AccessList
+	}
+	return nil
+}
+
+func (x *EIP7702) GetChainId() []byte {
+	if x != nil {
+		return x.ChainId
+	}
+	return nil
+}
+
+func (x *EIP7702) GetAuthorizationList() []*Authorization {
+	if x != nil {
+		return x.AuthorizationList
+	}
+	return nil
+}
+
+// Represents an entry in an authorization list
+type Authorization struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChainId       []byte                 `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"` // The chain ID of the authorization (0 for any chain)
+	Address       []byte                 `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`                // Address of the delegated code
+	Nonce         uint64                 `protobuf:"varint,3,opt,name=nonce,proto3" json:"nonce,omitempty"`                   // Nonce of the signer account
+	YParity       []byte                 `protobuf:"bytes,4,opt,name=y_parity,json=yParity,proto3" json:"y_parity,omitempty"` // ECDSA signature component 'y parity'
+	R             []byte                 `protobuf:"bytes,5,opt,name=r,proto3" json:"r,omitempty"`                            // ECDSA signature component 'r'
+	S             []byte                 `protobuf:"bytes,6,opt,name=s,proto3" json:"s,omitempty"`                            // ECDSA signature component 's'
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Authorization) Reset() {
+	*x = Authorization{}
+	mi := &file_eth_v1_tx_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Authorization) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Authorization) ProtoMessage() {}
+
+func (x *Authorization) ProtoReflect() protoreflect.Message {
+	mi := &file_eth_v1_tx_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Authorization.ProtoReflect.Descriptor instead.
+func (*Authorization) Descriptor() ([]byte, []int) {
+	return file_eth_v1_tx_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Authorization) GetChainId() []byte {
+	if x != nil {
+		return x.ChainId
+	}
+	return nil
+}
+
+func (x *Authorization) GetAddress() []byte {
+	if x != nil {
+		return x.Address
+	}
+	return nil
+}
+
+func (x *Authorization) GetNonce() uint64 {
+	if x != nil {
+		return x.Nonce
+	}
+	return 0
+}
+
+func (x *Authorization) GetYParity() []byte {
+	if x != nil {
+		return x.YParity
+	}
+	return nil
+}
+
+func (x *Authorization) GetR() []byte {
+	if x != nil {
+		return x.R
+	}
+	return nil
+}
+
+func (x *Authorization) GetS() []byte {
+	if x != nil {
+		return x.S
+	}
+	return nil
+}
+
 // Represents a standard "call" transaction object, usually
 // as a result of eth_call, eth_estimateGas and others.
 //
 // This is NOT the same transaction format as with signed transactions,
 // seen in eth_sendRawTransaction, which follow a stricter standard.
 // The users of this type will need to "guess" the transaction type,
-// whether it's Legacy, EIP-1559, EIP-2930, or others, based on the set fields
+// whether it's Legacy, EIP-1559, EIP-2930, EIP-4844, EIP-7702, or others, based on the set fields
 type CallTx struct {
 	state   protoimpl.MessageState `protogen:"open.v1"`
 	To      []byte                 `protobuf:"bytes,1,opt,name=to,proto3" json:"to,omitempty"`                          // destination address (required)
@@ -451,6 +730,8 @@ type CallTx struct {
 	//	*CallTx_Legacy
 	//	*CallTx_Eip1559
 	//	*CallTx_Eip2930
+	//	*CallTx_Eip4844
+	//	*CallTx_Eip7702
 	Payload       isCallTx_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -458,7 +739,7 @@ type CallTx struct {
 
 func (x *CallTx) Reset() {
 	*x = CallTx{}
-	mi := &file_eth_v1_tx_proto_msgTypes[5]
+	mi := &file_eth_v1_tx_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -470,7 +751,7 @@ func (x *CallTx) String() string {
 func (*CallTx) ProtoMessage() {}
 
 func (x *CallTx) ProtoReflect() protoreflect.Message {
-	mi := &file_eth_v1_tx_proto_msgTypes[5]
+	mi := &file_eth_v1_tx_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -483,7 +764,7 @@ func (x *CallTx) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CallTx.ProtoReflect.Descriptor instead.
 func (*CallTx) Descriptor() ([]byte, []int) {
-	return file_eth_v1_tx_proto_rawDescGZIP(), []int{5}
+	return file_eth_v1_tx_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CallTx) GetTo() []byte {
@@ -569,6 +850,24 @@ func (x *CallTx) GetEip2930() *EIP2930 {
 	return nil
 }
 
+func (x *CallTx) GetEip4844() *EIP4844 {
+	if x != nil {
+		if x, ok := x.Payload.(*CallTx_Eip4844); ok {
+			return x.Eip4844
+		}
+	}
+	return nil
+}
+
+func (x *CallTx) GetEip7702() *EIP7702 {
+	if x != nil {
+		if x, ok := x.Payload.(*CallTx_Eip7702); ok {
+			return x.Eip7702
+		}
+	}
+	return nil
+}
+
 type isCallTx_Payload interface {
 	isCallTx_Payload()
 }
@@ -585,17 +884,29 @@ type CallTx_Eip2930 struct {
 	Eip2930 *EIP2930 `protobuf:"bytes,10,opt,name=eip2930,proto3,oneof"` // EIP-2930 transaction details with access lists
 }
 
+type CallTx_Eip4844 struct {
+	Eip4844 *EIP4844 `protobuf:"bytes,11,opt,name=eip4844,proto3,oneof"` // EIP-4844 transaction details with blobs
+}
+
+type CallTx_Eip7702 struct {
+	Eip7702 *EIP7702 `protobuf:"bytes,12,opt,name=eip7702,proto3,oneof"` // EIP-7702 transaction details with authorization lists
+}
+
 func (*CallTx_Legacy) isCallTx_Payload() {}
 
 func (*CallTx_Eip1559) isCallTx_Payload() {}
 
 func (*CallTx_Eip2930) isCallTx_Payload() {}
 
+func (*CallTx_Eip4844) isCallTx_Payload() {}
+
+func (*CallTx_Eip7702) isCallTx_Payload() {}
+
 var File_eth_v1_tx_proto protoreflect.FileDescriptor
 
 const file_eth_v1_tx_proto_rawDesc = "" +
 	"\n" +
-	"\x0feth/v1/tx.proto\x12\x06eth.v1\"\xd0\x02\n" +
+	"\x0feth/v1/tx.proto\x12\x06eth.v1\"\xaa\x03\n" +
 	"\vTransaction\x12\x12\n" +
 	"\x04hash\x18\x01 \x01(\fR\x04hash\x12\x14\n" +
 	"\x05nonce\x18\x02 \x01(\x04R\x05nonce\x12\x12\n" +
@@ -610,7 +921,9 @@ const file_eth_v1_tx_proto_rawDesc = "" +
 	" \x01(\fR\x01s\x12(\n" +
 	"\x06legacy\x18\v \x01(\v2\x0e.eth.v1.LegacyH\x00R\x06legacy\x12+\n" +
 	"\aeip1559\x18\f \x01(\v2\x0f.eth.v1.EIP1559H\x00R\aeip1559\x12+\n" +
-	"\aeip2930\x18\r \x01(\v2\x0f.eth.v1.EIP2930H\x00R\aeip2930B\t\n" +
+	"\aeip2930\x18\r \x01(\v2\x0f.eth.v1.EIP2930H\x00R\aeip2930\x12+\n" +
+	"\aeip7702\x18\x0e \x01(\v2\x0f.eth.v1.EIP7702H\x00R\aeip7702\x12+\n" +
+	"\aeip4844\x18\x0f \x01(\v2\x0f.eth.v1.EIP4844H\x00R\aeip4844B\t\n" +
 	"\apayload\"%\n" +
 	"\x06Legacy\x12\x1b\n" +
 	"\tgas_price\x18\x01 \x01(\fR\bgasPrice\"\xbd\x01\n" +
@@ -627,7 +940,29 @@ const file_eth_v1_tx_proto_rawDesc = "" +
 	"\bchain_id\x18\x03 \x01(\fR\achainId\"N\n" +
 	"\x0fAccessListEntry\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\fR\aaddress\x12!\n" +
-	"\fstorage_keys\x18\x02 \x03(\fR\vstorageKeys\"\xa8\x02\n" +
+	"\fstorage_keys\x18\x02 \x03(\fR\vstorageKeys\"\xa1\x02\n" +
+	"\aEIP4844\x126\n" +
+	"\x18max_priority_fee_per_gas\x18\x01 \x01(\fR\x14maxPriorityFeePerGas\x12%\n" +
+	"\x0fmax_fee_per_gas\x18\x02 \x01(\fR\fmaxFeePerGas\x128\n" +
+	"\vaccess_list\x18\x03 \x03(\v2\x17.eth.v1.AccessListEntryR\n" +
+	"accessList\x12\x19\n" +
+	"\bchain_id\x18\x04 \x01(\fR\achainId\x12.\n" +
+	"\x14max_fee_per_blob_gas\x18\x05 \x01(\fR\x10maxFeePerBlobGas\x122\n" +
+	"\x15blob_versioned_hashes\x18\x06 \x03(\fR\x13blobVersionedHashes\"\x83\x02\n" +
+	"\aEIP7702\x126\n" +
+	"\x18max_priority_fee_per_gas\x18\x01 \x01(\fR\x14maxPriorityFeePerGas\x12%\n" +
+	"\x0fmax_fee_per_gas\x18\x02 \x01(\fR\fmaxFeePerGas\x128\n" +
+	"\vaccess_list\x18\x03 \x03(\v2\x17.eth.v1.AccessListEntryR\n" +
+	"accessList\x12\x19\n" +
+	"\bchain_id\x18\x04 \x01(\fR\achainId\x12D\n" +
+	"\x12authorization_list\x18\x05 \x03(\v2\x15.eth.v1.AuthorizationR\x11authorizationList\"\x91\x01\n" +
+	"\rAuthorization\x12\x19\n" +
+	"\bchain_id\x18\x01 \x01(\fR\achainId\x12\x18\n" +
+	"\aaddress\x18\x02 \x01(\fR\aaddress\x12\x14\n" +
+	"\x05nonce\x18\x03 \x01(\x04R\x05nonce\x12\x19\n" +
+	"\by_parity\x18\x04 \x01(\fR\ayParity\x12\f\n" +
+	"\x01r\x18\x05 \x01(\fR\x01r\x12\f\n" +
+	"\x01s\x18\x06 \x01(\fR\x01s\"\x82\x03\n" +
 	"\x06CallTx\x12\x0e\n" +
 	"\x02to\x18\x01 \x01(\fR\x02to\x12\x12\n" +
 	"\x04from\x18\x02 \x01(\fR\x04from\x12\x10\n" +
@@ -639,7 +974,9 @@ const file_eth_v1_tx_proto_rawDesc = "" +
 	"\x06legacy\x18\b \x01(\v2\x0e.eth.v1.LegacyH\x00R\x06legacy\x12+\n" +
 	"\aeip1559\x18\t \x01(\v2\x0f.eth.v1.EIP1559H\x00R\aeip1559\x12+\n" +
 	"\aeip2930\x18\n" +
-	" \x01(\v2\x0f.eth.v1.EIP2930H\x00R\aeip2930B\t\n" +
+	" \x01(\v2\x0f.eth.v1.EIP2930H\x00R\aeip2930\x12+\n" +
+	"\aeip4844\x18\v \x01(\v2\x0f.eth.v1.EIP4844H\x00R\aeip4844\x12+\n" +
+	"\aeip7702\x18\f \x01(\v2\x0f.eth.v1.EIP7702H\x00R\aeip7702B\t\n" +
 	"\apayloadB(Z&github.com/sig-0/ethtypes/proto/eth/v1b\x06proto3"
 
 var (
@@ -654,29 +991,39 @@ func file_eth_v1_tx_proto_rawDescGZIP() []byte {
 	return file_eth_v1_tx_proto_rawDescData
 }
 
-var file_eth_v1_tx_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_eth_v1_tx_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_eth_v1_tx_proto_goTypes = []any{
 	(*Transaction)(nil),     // 0: eth.v1.Transaction
 	(*Legacy)(nil),          // 1: eth.v1.Legacy
 	(*EIP1559)(nil),         // 2: eth.v1.EIP1559
 	(*EIP2930)(nil),         // 3: eth.v1.EIP2930
 	(*AccessListEntry)(nil), // 4: eth.v1.AccessListEntry
-	(*CallTx)(nil),          // 5: eth.v1.CallTx
+	(*EIP4844)(nil),         // 5: eth.v1.EIP4844
+	(*EIP7702)(nil),         // 6: eth.v1.EIP7702
+	(*Authorization)(nil),   // 7: eth.v1.Authorization
+	(*CallTx)(nil),          // 8: eth.v1.CallTx
 }
 var file_eth_v1_tx_proto_depIdxs = []int32{
-	1, // 0: eth.v1.Transaction.legacy:type_name -> eth.v1.Legacy
-	2, // 1: eth.v1.Transaction.eip1559:type_name -> eth.v1.EIP1559
-	3, // 2: eth.v1.Transaction.eip2930:type_name -> eth.v1.EIP2930
-	4, // 3: eth.v1.EIP1559.access_list:type_name -> eth.v1.AccessListEntry
-	4, // 4: eth.v1.EIP2930.access_list:type_name -> eth.v1.AccessListEntry
-	1, // 5: eth.v1.CallTx.legacy:type_name -> eth.v1.Legacy
-	2, // 6: eth.v1.CallTx.eip1559:type_name -> eth.v1.EIP1559
-	3, // 7: eth.v1.CallTx.eip2930:type_name -> eth.v1.EIP2930
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	1,  // 0: eth.v1.Transaction.legacy:type_name -> eth.v1.Legacy
+	2,  // 1: eth.v1.Transaction.eip1559:type_name -> eth.v1.EIP1559
+	3,  // 2: eth.v1.Transaction.eip2930:type_name -> eth.v1.EIP2930
+	6,  // 3: eth.v1.Transaction.eip7702:type_name -> eth.v1.EIP7702
+	5,  // 4: eth.v1.Transaction.eip4844:type_name -> eth.v1.EIP4844
+	4,  // 5: eth.v1.EIP1559.access_list:type_name -> eth.v1.AccessListEntry
+	4,  // 6: eth.v1.EIP2930.access_list:type_name -> eth.v1.AccessListEntry
+	4,  // 7: eth.v1.EIP4844.access_list:type_name -> eth.v1.AccessListEntry
+	4,  // 8: eth.v1.EIP7702.access_list:type_name -> eth.v1.AccessListEntry
+	7,  // 9: eth.v1.EIP7702.authorization_list:type_name -> eth.v1.Authorization
+	1,  // 10: eth.v1.CallTx.legacy:type_name -> eth.v1.Legacy
+	2,  // 11: eth.v1.CallTx.eip1559:type_name -> eth.v1.EIP1559
+	3,  // 12: eth.v1.CallTx.eip2930:type_name -> eth.v1.EIP2930
+	5,  // 13: eth.v1.CallTx.eip4844:type_name -> eth.v1.EIP4844
+	6,  // 14: eth.v1.CallTx.eip7702:type_name -> eth.v1.EIP7702
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_eth_v1_tx_proto_init() }
@@ -688,11 +1035,15 @@ func file_eth_v1_tx_proto_init() {
 		(*Transaction_Legacy)(nil),
 		(*Transaction_Eip1559)(nil),
 		(*Transaction_Eip2930)(nil),
+		(*Transaction_Eip7702)(nil),
+		(*Transaction_Eip4844)(nil),
 	}
-	file_eth_v1_tx_proto_msgTypes[5].OneofWrappers = []any{
+	file_eth_v1_tx_proto_msgTypes[8].OneofWrappers = []any{
 		(*CallTx_Legacy)(nil),
 		(*CallTx_Eip1559)(nil),
 		(*CallTx_Eip2930)(nil),
+		(*CallTx_Eip4844)(nil),
+		(*CallTx_Eip7702)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -700,7 +1051,7 @@ func file_eth_v1_tx_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_eth_v1_tx_proto_rawDesc), len(file_eth_v1_tx_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

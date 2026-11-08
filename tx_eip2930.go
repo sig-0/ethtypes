@@ -78,6 +78,18 @@ func (tx *TxEIP2930) getAccessList() AccessList {
 	return tx.AccessList
 }
 
+func (tx *TxEIP2930) getMaxFeePerBlobGas() *big.Int {
+	return nil
+}
+
+func (tx *TxEIP2930) getBlobVersionedHashes() []Hash {
+	return nil
+}
+
+func (tx *TxEIP2930) getAuthorizationList() AuthorizationList {
+	return nil
+}
+
 func (tx *TxEIP2930) getHash() Hash {
 	return BytesToHash(tx.SignaturePayload())
 }
@@ -107,6 +119,8 @@ func (tx *TxEIP2930) FromRLP(txData []byte) error {
 		)
 	}
 
+	var d TxEIP2930
+
 	// Decode the chain ID
 	if listValues[0].GetType() != ethrlp.Bytes {
 		return fmt.Errorf(
@@ -116,41 +130,41 @@ func (tx *TxEIP2930) FromRLP(txData []byte) error {
 	}
 
 	chainIDRaw, ok := listValues[0].GetValue().([]byte)
-	if !ok || chainIDRaw == nil {
-		return errors.New("invalid chain ID RLP encoding")
+	if !ok || len(chainIDRaw) > 32 || (len(chainIDRaw) > 0 && chainIDRaw[0] == 0) {
+		return ErrInvalidRLPChainID
 	}
 
-	tx.ChainID = big.NewInt(0).SetBytes(chainIDRaw)
+	d.ChainID = big.NewInt(0).SetBytes(chainIDRaw)
 
 	// Decode the nonce
 	if listValues[1].GetType() != ethrlp.Bytes {
 		return fmt.Errorf(
 			"invalid RLP encoding type for nonce, %s",
-			listValues[0].GetType(),
+			listValues[1].GetType(),
 		)
 	}
 
 	nonceRaw, ok := listValues[1].GetValue().([]byte)
-	if !ok || nonceRaw == nil {
-		return errors.New("invalid nonce RLP encoding")
+	if !ok || len(nonceRaw) > 8 || (len(nonceRaw) > 0 && nonceRaw[0] == 0) {
+		return ErrInvalidRLPNonce
 	}
 
-	tx.Nonce = big.NewInt(0).SetBytes(nonceRaw).Uint64()
+	d.Nonce = big.NewInt(0).SetBytes(nonceRaw).Uint64()
 
-	// Decode the max priority fee per gas
+	// Decode the gas price
 	if listValues[2].GetType() != ethrlp.Bytes {
 		return fmt.Errorf(
-			"invalid RLP encoding type for max priority fee per gas, %s",
+			"invalid RLP encoding type for gas price, %s",
 			listValues[2].GetType(),
 		)
 	}
 
 	gasPriceRaw, ok := listValues[2].GetValue().([]byte)
-	if !ok || gasPriceRaw == nil {
-		return errors.New("invalid gas price RLP encoding")
+	if !ok || len(gasPriceRaw) > 32 || (len(gasPriceRaw) > 0 && gasPriceRaw[0] == 0) {
+		return ErrInvalidRLPGasPrice
 	}
 
-	tx.GasPrice = big.NewInt(0).SetBytes(gasPriceRaw)
+	d.GasPrice = big.NewInt(0).SetBytes(gasPriceRaw)
 
 	// Decode the gas limit
 	if listValues[3].GetType() != ethrlp.Bytes {
@@ -161,13 +175,13 @@ func (tx *TxEIP2930) FromRLP(txData []byte) error {
 	}
 
 	gasLimitRaw, ok := listValues[3].GetValue().([]byte)
-	if !ok || gasLimitRaw == nil {
-		return errors.New("invalid gas limit RLP encoding")
+	if !ok || len(gasLimitRaw) > 8 || (len(gasLimitRaw) > 0 && gasLimitRaw[0] == 0) {
+		return ErrInvalidRLPGasLimit
 	}
 
-	tx.Gas = big.NewInt(0).SetBytes(gasLimitRaw).Uint64()
+	d.Gas = big.NewInt(0).SetBytes(gasLimitRaw).Uint64()
 
-	// Decode the recipient address
+	// Decode the recipient address (empty for a contract creation)
 	if listValues[4].GetType() != ethrlp.Bytes {
 		return fmt.Errorf(
 			"invalid RLP encoding type for to address, %s",
@@ -175,11 +189,15 @@ func (tx *TxEIP2930) FromRLP(txData []byte) error {
 		)
 	}
 
-	if toRaw := listValues[4].GetValue(); toRaw != nil {
-		to, _ := toRaw.([]byte)
-		address := BytesToAddress(to)
+	toRaw, ok := listValues[4].GetValue().([]byte)
+	if !ok || (len(toRaw) != 0 && len(toRaw) != addressSize) {
+		return ErrInvalidRLPTo
+	}
 
-		tx.To = &address
+	if len(toRaw) != 0 {
+		address := BytesToAddress(toRaw)
+
+		d.To = &address
 	}
 
 	// Decode the value
@@ -191,11 +209,11 @@ func (tx *TxEIP2930) FromRLP(txData []byte) error {
 	}
 
 	valueRaw, ok := listValues[5].GetValue().([]byte)
-	if !ok || valueRaw == nil {
-		return errors.New("invalid value RLP encoding")
+	if !ok || len(valueRaw) > 32 || (len(valueRaw) > 0 && valueRaw[0] == 0) {
+		return ErrInvalidRLPValue
 	}
 
-	tx.Value = big.NewInt(0).SetBytes(valueRaw)
+	d.Value = big.NewInt(0).SetBytes(valueRaw)
 
 	// Decode the data
 	if listValues[6].GetType() != ethrlp.Bytes {
@@ -207,10 +225,10 @@ func (tx *TxEIP2930) FromRLP(txData []byte) error {
 
 	dataRaw, ok := listValues[6].GetValue().([]byte)
 	if !ok || dataRaw == nil {
-		return errors.New("invalid data RLP encoding")
+		return ErrInvalidRLPData
 	}
 
-	tx.Data = dataRaw
+	d.Data = dataRaw
 
 	// Decode the access list
 	if listValues[7].GetType() != ethrlp.List {
@@ -222,30 +240,27 @@ func (tx *TxEIP2930) FromRLP(txData []byte) error {
 
 	accessListRaw, ok := listValues[7].GetValue().([]ethrlp.Value)
 	if !ok || accessListRaw == nil {
-		return errors.New("invalid access list RLP encoding")
+		return ErrInvalidRLPAccessList
 	}
 
-	accessList := make(AccessList, 0)
-	if err = accessList.FromRLPValues(accessListRaw); err != nil {
-		return fmt.Errorf("invalid access list RLP encoding: %w", err)
+	if err = d.AccessList.FromRLPValues(accessListRaw); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidRLPAccessList, err)
 	}
-
-	tx.AccessList = accessList
 
 	// Decode the v sig param
 	if listValues[8].GetType() != ethrlp.Bytes {
 		return fmt.Errorf(
 			"invalid RLP encoding type for v sig param, %s",
-			listValues[9].GetType(),
+			listValues[8].GetType(),
 		)
 	}
 
 	yParityRaw, ok := listValues[8].GetValue().([]byte)
-	if !ok || yParityRaw == nil {
-		return errors.New("invalid y parity sig param RLP encoding")
+	if !ok || len(yParityRaw) > 32 || (len(yParityRaw) > 0 && yParityRaw[0] == 0) {
+		return ErrInvalidRLPYParity
 	}
 
-	tx.YParity = big.NewInt(0).SetBytes(yParityRaw)
+	d.YParity = big.NewInt(0).SetBytes(yParityRaw)
 
 	// Decode the r sig param
 	if listValues[9].GetType() != ethrlp.Bytes {
@@ -256,11 +271,11 @@ func (tx *TxEIP2930) FromRLP(txData []byte) error {
 	}
 
 	rRaw, ok := listValues[9].GetValue().([]byte)
-	if !ok || rRaw == nil {
-		return errors.New("invalid r sig param RLP encoding")
+	if !ok || len(rRaw) > 32 || (len(rRaw) > 0 && rRaw[0] == 0) {
+		return ErrInvalidRLPRParam
 	}
 
-	tx.R = big.NewInt(0).SetBytes(rRaw)
+	d.R = big.NewInt(0).SetBytes(rRaw)
 
 	// Decode the s sig param
 	if listValues[10].GetType() != ethrlp.Bytes {
@@ -271,11 +286,13 @@ func (tx *TxEIP2930) FromRLP(txData []byte) error {
 	}
 
 	sRaw, ok := listValues[10].GetValue().([]byte)
-	if !ok || sRaw == nil {
-		return errors.New("invalid r sig param RLP encoding")
+	if !ok || len(sRaw) > 32 || (len(sRaw) > 0 && sRaw[0] == 0) {
+		return ErrInvalidRLPSParam
 	}
 
-	tx.S = big.NewInt(0).SetBytes(sRaw)
+	d.S = big.NewInt(0).SetBytes(sRaw)
+
+	*tx = d
 
 	return nil
 }
@@ -362,12 +379,8 @@ func (tx *TxEIP2930) ToProto() *txProto.Transaction {
 		pb.S = tx.S.Bytes()
 	}
 
-	// Convert To address (empty means contract deployment)
-	tx.To = nil
-
-	if len(pb.To) > 0 {
-		addr := BytesToAddress(pb.To)
-		tx.To = &addr
+	if tx.To != nil {
+		pb.To = tx.To.ToBytes()
 	}
 
 	// Set the EIP-2930 payload
@@ -396,29 +409,56 @@ func (tx *TxEIP2930) ToProto() *txProto.Transaction {
 //
 // 0x01 (transaction type) is appended as the first byte of the RLP encoding
 func (tx *TxEIP2930) ToRLP() []byte {
-	var rlpPayload [][]byte
-
 	var toAddress []byte
 	if tx.To != nil {
 		toAddress = tx.To.ToBytes()
 	}
 
-	// Encode the access list
-	accessListEnc := new(AccessList).ToRLP()
-
-	if len(tx.AccessList) != 0 {
-		accessListEnc = tx.AccessList.ToRLP()
-	}
-
-	rlpPayload = [][]byte{
-		ethrlp.EncodeBigInt(tx.ChainID),
+	// Construct the RLP data
+	rlpPayload := [][]byte{
+		ethrlp.EncodeBytes(bigToBytes(tx.ChainID)),
 		ethrlp.EncodeUint(tx.Nonce),
-		ethrlp.EncodeBigInt(tx.GasPrice),
+		ethrlp.EncodeBytes(bigToBytes(tx.GasPrice)),
 		ethrlp.EncodeUint(tx.Gas),
 		ethrlp.EncodeBytes(toAddress),
-		ethrlp.EncodeBigInt(tx.Value),
+		ethrlp.EncodeBytes(bigToBytes(tx.Value)),
 		ethrlp.EncodeBytes(tx.Data),
-		accessListEnc,
+		tx.AccessList.ToRLP(),
+	}
+
+	// Perform the RLP encoding of the payload
+	rlpEncoding := ethrlp.EncodeArray(rlpPayload)
+
+	// Concatenate the RLP encoding with the transaction type
+	rlpEncoding = append([]byte{Transaction2930}, rlpEncoding...)
+
+	return rlpEncoding
+}
+
+// ToSignedRLP encodes the signed EIP-2930 transaction using RLP encoding.
+//
+// rlp([chainID, nonce, gasPrice, gas, to, value, data, accessList, yParity, r, s])
+//
+// 0x01 (transaction type) is appended as the first byte of the RLP encoding
+func (tx *TxEIP2930) ToSignedRLP() []byte {
+	var toAddress []byte
+	if tx.To != nil {
+		toAddress = tx.To.ToBytes()
+	}
+
+	// Construct the RLP data
+	rlpPayload := [][]byte{
+		ethrlp.EncodeBytes(bigToBytes(tx.ChainID)),
+		ethrlp.EncodeUint(tx.Nonce),
+		ethrlp.EncodeBytes(bigToBytes(tx.GasPrice)),
+		ethrlp.EncodeUint(tx.Gas),
+		ethrlp.EncodeBytes(toAddress),
+		ethrlp.EncodeBytes(bigToBytes(tx.Value)),
+		ethrlp.EncodeBytes(tx.Data),
+		tx.AccessList.ToRLP(),
+		ethrlp.EncodeBytes(bigToBytes(tx.YParity)),
+		ethrlp.EncodeBytes(bigToBytes(tx.R)),
+		ethrlp.EncodeBytes(bigToBytes(tx.S)),
 	}
 
 	// Perform the RLP encoding of the payload

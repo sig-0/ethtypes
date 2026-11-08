@@ -8,37 +8,53 @@ import (
 	ethProto "github.com/sig-0/ethtypes/proto/eth/v1"
 )
 
-var ErrNilProtoBlock = errors.New("proto block is nil")
+var (
+	ErrNilProtoBlock         = errors.New("proto block is nil")
+	ErrNilBlockHeader        = errors.New("block header is nil")
+	ErrUnexpectedWithdrawals = errors.New("withdrawals on a pre-Shanghai block")
+)
 
 // Block is a single Ethereum block, containing the
-// header and transactions
+// header, transactions, uncles and withdrawals
 type Block struct {
-	Header       *Header        // the block header
-	Transactions []*Transaction // the full transaction set
-	Uncles       []*Header      // uncle headers (usually empty)
+	Header       *Header        // Associated block header
+	Transactions []*Transaction // List of transactions included in the block
+	Uncles       []*Header      // List of uncle headers included in the block
+	Withdrawals  []Withdrawal   // List of validator withdrawals included in the block
 }
 
-// ToRLP encodes the block using RLP encoding
+// ToRLP encodes the block using RLP encoding.
+//
+// - Pre-Shanghai RLP: [header, transactions, uncles] (3 elements)
+//
+// - Shanghai RLP: [header, transactions, uncles, withdrawals] (4 elements)
+//
+// Transactions are encoded in their signed form
 func (b *Block) ToRLP() ([]byte, error) {
-	// Encode the header
+	if b.Header == nil {
+		return nil, ErrNilBlockHeader
+	}
+
 	headerRLP, err := b.Header.ToRLP()
 	if err != nil {
 		return nil, fmt.Errorf("unable to encode header: %w", err)
 	}
 
-	// Encode the transactions
 	txsRLP := make([][]byte, 0, len(b.Transactions))
 
 	for _, tx := range b.Transactions {
-		txRLP, err := tx.ToRLP()
+		signed, err := tx.ToSignedRLP()
 		if err != nil {
-			return nil, fmt.Errorf("unable to encode tx: %w", err)
+			return nil, fmt.Errorf("unable to encode transaction: %w", err)
 		}
 
-		txsRLP = append(txsRLP, txRLP)
+		if tx.Type() != TransactionLegacy {
+			signed = ethrlp.EncodeBytes(signed)
+		}
+
+		txsRLP = append(txsRLP, signed)
 	}
 
-	// Encode the uncles
 	unclesRLP := make([][]byte, 0, len(b.Uncles))
 
 	for _, uncle := range b.Uncles {
@@ -50,16 +66,22 @@ func (b *Block) ToRLP() ([]byte, error) {
 		unclesRLP = append(unclesRLP, uncleRLP)
 	}
 
-	rlpPayload := [][]byte{
-		headerRLP,
-		ethrlp.EncodeArray(txsRLP),
-		ethrlp.EncodeArray(unclesRLP),
+	payload := [][]byte{headerRLP, ethrlp.EncodeArray(txsRLP), ethrlp.EncodeArray(unclesRLP)}
+
+	// Encode the withdrawals (EIP-4895 headers and later)
+	switch {
+	case b.Header.inner.getType() >= headerEIP4895:
+		withdrawalsRLP := make([][]byte, 0, len(b.Withdrawals))
+		for _, w := range b.Withdrawals {
+			withdrawalsRLP = append(withdrawalsRLP, w.ToRLP())
+		}
+
+		payload = append(payload, ethrlp.EncodeArray(withdrawalsRLP))
+	case len(b.Withdrawals) > 0:
+		return nil, ErrUnexpectedWithdrawals
 	}
 
-	// Perform the RLP encoding of the payload
-	rlpEncoding := ethrlp.EncodeArray(rlpPayload)
-
-	return rlpEncoding, nil
+	return ethrlp.EncodeArray(payload), nil
 }
 
 // FromProto converts a proto Block to a block representation
@@ -87,14 +109,42 @@ func (b *Block) FromProto(pb *ethProto.Block) error {
 		txs = append(txs, tx)
 	}
 
-	b.Header = header
-	b.Transactions = txs
+	uncles := make([]*Header, 0, len(pb.Uncles))
+
+	for _, protoUncle := range pb.Uncles {
+		uncle := new(Header)
+
+		if err := uncle.FromProto(protoUncle); err != nil {
+			return fmt.Errorf("unable to parse uncle proto: %w", err)
+		}
+
+		uncles = append(uncles, uncle)
+	}
+
+	withdrawals := make([]Withdrawal, len(pb.Withdrawals))
+
+	for i, protoWithdrawal := range pb.Withdrawals {
+		if err := withdrawals[i].FromProto(protoWithdrawal); err != nil {
+			return fmt.Errorf("unable to parse withdrawal proto: %w", err)
+		}
+	}
+
+	*b = Block{
+		Header:       header,
+		Transactions: txs,
+		Uncles:       uncles,
+		Withdrawals:  withdrawals,
+	}
 
 	return nil
 }
 
 // ToProto converts a block to its proto representation
 func (b *Block) ToProto() (*ethProto.Block, error) {
+	if b.Header == nil {
+		return nil, ErrNilBlockHeader
+	}
+
 	// Prepare the header
 	headerProto, err := b.Header.ToProto()
 	if err != nil {
@@ -113,8 +163,26 @@ func (b *Block) ToProto() (*ethProto.Block, error) {
 		txsProto = append(txsProto, protoTx)
 	}
 
+	unclesProto := make([]*ethProto.Header, 0, len(b.Uncles))
+
+	for _, uncle := range b.Uncles {
+		protoUncle, err := uncle.ToProto()
+		if err != nil {
+			return nil, fmt.Errorf("unable to marshal uncle: %w", err)
+		}
+
+		unclesProto = append(unclesProto, protoUncle)
+	}
+
+	withdrawalsProto := make([]*ethProto.Withdrawal, 0, len(b.Withdrawals))
+	for _, w := range b.Withdrawals {
+		withdrawalsProto = append(withdrawalsProto, w.ToProto())
+	}
+
 	return &ethProto.Block{
 		Header:       headerProto,
 		Transactions: txsProto,
+		Withdrawals:  withdrawalsProto,
+		Uncles:       unclesProto,
 	}, nil
 }

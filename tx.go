@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 
 	"github.com/sig-0/ethcrypto/secp256k1"
+	"github.com/sig-0/ethtypes/keccak"
 	txProto "github.com/sig-0/ethtypes/proto/eth/v1"
 )
 
@@ -13,6 +14,8 @@ const (
 	TransactionLegacy = 0x00
 	Transaction2930   = 0x01
 	Transaction1559   = 0x02
+	Transaction4844   = 0x03
+	Transaction7702   = 0x04
 )
 
 // transactionData is the wrapper for specific transaction types
@@ -62,6 +65,19 @@ type transactionData interface {
 
 	// getAccessList returns the tx access list, if any
 	getAccessList() AccessList
+
+	// EIP-4844 //
+
+	// getMaxFeePerBlobGas returns the max fee per blob gas, if any
+	getMaxFeePerBlobGas() *big.Int
+
+	// getBlobVersionedHashes returns the tx blob versioned hashes, if any
+	getBlobVersionedHashes() []Hash
+
+	// EIP-7702 //
+
+	// getAuthorizationList returns the tx authorization list, if any
+	getAuthorizationList() AuthorizationList
 }
 
 type Transaction struct {
@@ -164,6 +180,18 @@ func (t *Transaction) MaxPriorityFeePerGas() *big.Int {
 	return t.inner.getMaxPriorityFeePerGas()
 }
 
+func (t *Transaction) MaxFeePerBlobGas() *big.Int {
+	return t.inner.getMaxFeePerBlobGas()
+}
+
+func (t *Transaction) BlobVersionedHashes() []Hash {
+	return t.inner.getBlobVersionedHashes()
+}
+
+func (t *Transaction) AuthorizationList() AuthorizationList {
+	return t.inner.getAuthorizationList()
+}
+
 func (t *Transaction) Cost() *big.Int {
 	// (gas price * gas) + value
 	cost := big.NewInt(0).Mul(
@@ -174,6 +202,7 @@ func (t *Transaction) Cost() *big.Int {
 	return big.NewInt(0).Add(cost, t.Value())
 }
 
+// Hash returns the transaction signing hash (signature payload)
 func (t *Transaction) Hash() Hash {
 	// Load the hash from the built-in type cache
 	// for quick lookup, if it's present
@@ -192,24 +221,72 @@ func (t *Transaction) Hash() Hash {
 	return hash
 }
 
-// ToProto converts the Transaction into its proto representation
-func (t *Transaction) ToProto() (*txProto.Transaction, error) {
+// ToSignedRLP encodes the signed transaction using RLP encoding
+func (t *Transaction) ToSignedRLP() ([]byte, error) {
 	switch t.Type() {
 	case TransactionLegacy:
 		tx := t.inner.(*TxLegacy)
 
-		return tx.ToProto(), nil
+		return tx.ToSignedRLP(), nil
 	case Transaction2930:
 		tx := t.inner.(*TxEIP2930)
 
-		return tx.ToProto(), nil
+		return tx.ToSignedRLP(), nil
 	case Transaction1559:
 		tx := t.inner.(*TxEIP1559)
 
-		return tx.ToProto(), nil
+		return tx.ToSignedRLP(), nil
+	case Transaction4844:
+		tx := t.inner.(*TxEIP4844)
+
+		return tx.ToSignedRLP(), nil
+	case Transaction7702:
+		tx := t.inner.(*TxEIP7702)
+
+		return tx.ToSignedRLP(), nil
 	}
 
 	return nil, fmt.Errorf("unknown transaction type, %x", t.Type())
+}
+
+// TxHash returns the transaction hash, which is
+// the keccak of the signed transaction RLP encoding
+func (t *Transaction) TxHash() (Hash, error) {
+	signed, err := t.ToSignedRLP()
+	if err != nil {
+		return Hash{}, err
+	}
+
+	return BytesToHash(keccak.New().Hash(signed)), nil
+}
+
+// ToProto converts the Transaction into its proto representation
+func (t *Transaction) ToProto() (*txProto.Transaction, error) {
+	var pb *txProto.Transaction
+
+	switch t.Type() {
+	case TransactionLegacy:
+		pb = t.inner.(*TxLegacy).ToProto()
+	case Transaction2930:
+		pb = t.inner.(*TxEIP2930).ToProto()
+	case Transaction1559:
+		pb = t.inner.(*TxEIP1559).ToProto()
+	case Transaction4844:
+		pb = t.inner.(*TxEIP4844).ToProto()
+	case Transaction7702:
+		pb = t.inner.(*TxEIP7702).ToProto()
+	default:
+		return nil, fmt.Errorf("unknown transaction type, %x", t.Type())
+	}
+
+	hash, err := t.TxHash()
+	if err != nil {
+		return nil, err
+	}
+
+	pb.Hash = hash.ToBytes()
+
+	return pb, nil
 }
 
 // FromProto converts a proto Transaction into a Transaction
@@ -243,9 +320,29 @@ func (t *Transaction) FromProto(pb *txProto.Transaction) error {
 		}
 
 		t.inner = tx
+	case *txProto.Transaction_Eip4844:
+		tx := &TxEIP4844{}
+
+		if err := tx.FromProto(pb); err != nil {
+			return fmt.Errorf("unable to parse EIP4844 proto: %w", err)
+		}
+
+		t.inner = tx
+	case *txProto.Transaction_Eip7702:
+		tx := &TxEIP7702{}
+
+		if err := tx.FromProto(pb); err != nil {
+			return fmt.Errorf("unable to parse EIP7702 proto: %w", err)
+		}
+
+		t.inner = tx
 	default:
 		return fmt.Errorf("unsupported proto payload type: %T", payload)
 	}
+
+	// Reset the cached sender and hash, they belong to the previous transaction
+	t.from = atomic.Value{}
+	t.hash = atomic.Value{}
 
 	return nil
 }
@@ -265,7 +362,24 @@ func (t *Transaction) ToRLP() ([]byte, error) {
 		tx := t.inner.(*TxEIP1559)
 
 		return tx.ToRLP(), nil
+	case Transaction4844:
+		tx := t.inner.(*TxEIP4844)
+
+		return tx.ToRLP(), nil
+	case Transaction7702:
+		tx := t.inner.(*TxEIP7702)
+
+		return tx.ToRLP(), nil
 	}
 
 	return nil, fmt.Errorf("unknown transaction type, %x", t.Type())
+}
+
+// bigToBytes returns the bytes of the big int, or nil if it is not set
+func bigToBytes(x *big.Int) []byte {
+	if x == nil {
+		return nil
+	}
+
+	return x.Bytes()
 }

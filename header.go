@@ -10,10 +10,13 @@ import (
 
 type headerType byte
 
+// Header types are ordered by hardfork (Block.ToRLP relies on it)
 const (
 	headerLegacy  headerType = 0x0
 	headerEIP1559 headerType = 0x1
 	headerEIP4895 headerType = 0x2
+	headerEIP4844 headerType = 0x3
+	headerEIP7685 headerType = 0x4
 )
 
 // Header is the
@@ -52,6 +55,14 @@ type headerData interface {
 
 	// EIP-4895 //
 	getWithdrawalsRoot() Hash
+
+	// EIP-4844 //
+	getBlobGasUsed() uint64
+	getExcessBlobGas() uint64
+	getParentBeaconBlockRoot() Hash
+
+	// EIP-7685 //
+	getRequestsHash() Hash
 }
 
 // NewHeader creates a new header wrapper
@@ -92,6 +103,14 @@ func (h *Header) ToRLP() ([]byte, error) {
 		return header.ToRLP(), nil
 	case headerEIP4895:
 		header := h.inner.(*HeaderEIP4895)
+
+		return header.ToRLP(), nil
+	case headerEIP4844:
+		header := h.inner.(*HeaderEIP4844)
+
+		return header.ToRLP(), nil
+	case headerEIP7685:
+		header := h.inner.(*HeaderEIP7685)
 
 		return header.ToRLP(), nil
 	}
@@ -167,6 +186,22 @@ func (h *Header) WithdrawalsRoot() Hash {
 	return h.inner.getWithdrawalsRoot()
 }
 
+func (h *Header) BlobGasUsed() uint64 {
+	return h.inner.getBlobGasUsed()
+}
+
+func (h *Header) ExcessBlobGas() uint64 {
+	return h.inner.getExcessBlobGas()
+}
+
+func (h *Header) ParentBeaconBlockRoot() Hash {
+	return h.inner.getParentBeaconBlockRoot()
+}
+
+func (h *Header) RequestsHash() Hash {
+	return h.inner.getRequestsHash()
+}
+
 // ToProto converts the Header into its proto representation
 func (h *Header) ToProto() (*ethProto.Header, error) {
 	switch h.inner.getType() {
@@ -180,6 +215,14 @@ func (h *Header) ToProto() (*ethProto.Header, error) {
 		return header.ToProto(), nil
 	case headerEIP4895:
 		header := h.inner.(*HeaderEIP4895)
+
+		return header.ToProto(), nil
+	case headerEIP4844:
+		header := h.inner.(*HeaderEIP4844)
+
+		return header.ToProto(), nil
+	case headerEIP7685:
+		header := h.inner.(*HeaderEIP7685)
 
 		return header.ToProto(), nil
 	}
@@ -210,6 +253,22 @@ func (h *Header) FromProto(pb *ethProto.Header) error {
 		}
 
 		h.inner = header
+	case *ethProto.Header_Eip4844:
+		header := new(HeaderEIP4844)
+
+		if err := header.FromProto(pb); err != nil {
+			return fmt.Errorf("unable to parse EIP4844 header proto: %w", err)
+		}
+
+		h.inner = header
+	case *ethProto.Header_Eip7685:
+		header := new(HeaderEIP7685)
+
+		if err := header.FromProto(pb); err != nil {
+			return fmt.Errorf("unable to parse EIP7685 header proto: %w", err)
+		}
+
+		h.inner = header
 	default:
 		// Legacy header
 		header := new(HeaderLegacy)
@@ -220,6 +279,9 @@ func (h *Header) FromProto(pb *ethProto.Header) error {
 
 		h.inner = header
 	}
+
+	// Reset the cached hash, it belongs to the previous header
+	h.hash = atomic.Value{}
 
 	return nil
 }

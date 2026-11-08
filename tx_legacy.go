@@ -14,6 +14,7 @@ var (
 	ErrInvalidRLPNonce    = errors.New("invalid nonce RLP encoding")
 	ErrInvalidRLPGasPrice = errors.New("invalid gas price RLP encoding")
 	ErrInvalidRLPGasLimit = errors.New("invalid gas limit RLP encoding")
+	ErrInvalidRLPTo       = errors.New("invalid to address RLP encoding")
 	ErrInvalidRLPValue    = errors.New("invalid value RLP encoding")
 	ErrInvalidRLPData     = errors.New("invalid data RLP encoding")
 	ErrInvalidRLPVParam   = errors.New("invalid v sig param RLP encoding")
@@ -102,6 +103,18 @@ func (tx *TxLegacy) getAccessList() AccessList {
 	return nil // there is no access list
 }
 
+func (tx *TxLegacy) getMaxFeePerBlobGas() *big.Int {
+	return nil
+}
+
+func (tx *TxLegacy) getBlobVersionedHashes() []Hash {
+	return nil
+}
+
+func (tx *TxLegacy) getAuthorizationList() AuthorizationList {
+	return nil
+}
+
 func (tx *TxLegacy) getHash() Hash {
 	return BytesToHash(tx.SignaturePayload())
 }
@@ -131,6 +144,8 @@ func (tx *TxLegacy) FromRLP(txPayload []byte) error {
 		)
 	}
 
+	var d TxLegacy
+
 	// Decode the nonce
 	if listValues[0].GetType() != ethrlp.Bytes {
 		return fmt.Errorf(
@@ -140,11 +155,11 @@ func (tx *TxLegacy) FromRLP(txPayload []byte) error {
 	}
 
 	nonceRaw, ok := listValues[0].GetValue().([]byte)
-	if !ok || nonceRaw == nil {
+	if !ok || len(nonceRaw) > 8 || (len(nonceRaw) > 0 && nonceRaw[0] == 0) {
 		return ErrInvalidRLPNonce
 	}
 
-	tx.Nonce = big.NewInt(0).SetBytes(nonceRaw).Uint64()
+	d.Nonce = big.NewInt(0).SetBytes(nonceRaw).Uint64()
 
 	// Decode the gas price
 	if listValues[1].GetType() != ethrlp.Bytes {
@@ -155,11 +170,11 @@ func (tx *TxLegacy) FromRLP(txPayload []byte) error {
 	}
 
 	gasPriceRaw, ok := listValues[1].GetValue().([]byte)
-	if !ok || gasPriceRaw == nil {
+	if !ok || len(gasPriceRaw) > 32 || (len(gasPriceRaw) > 0 && gasPriceRaw[0] == 0) {
 		return ErrInvalidRLPGasPrice
 	}
 
-	tx.GasPrice = big.NewInt(0).SetBytes(gasPriceRaw)
+	d.GasPrice = big.NewInt(0).SetBytes(gasPriceRaw)
 
 	// Decode the gas limit
 	if listValues[2].GetType() != ethrlp.Bytes {
@@ -170,13 +185,13 @@ func (tx *TxLegacy) FromRLP(txPayload []byte) error {
 	}
 
 	gasLimitRaw, ok := listValues[2].GetValue().([]byte)
-	if !ok || gasLimitRaw == nil {
+	if !ok || len(gasLimitRaw) > 8 || (len(gasLimitRaw) > 0 && gasLimitRaw[0] == 0) {
 		return ErrInvalidRLPGasLimit
 	}
 
-	tx.Gas = big.NewInt(0).SetBytes(gasLimitRaw).Uint64()
+	d.Gas = big.NewInt(0).SetBytes(gasLimitRaw).Uint64()
 
-	// Decode the recipient address
+	// Decode the recipient address (empty for a contract creation)
 	if listValues[3].GetType() != ethrlp.Bytes {
 		return fmt.Errorf(
 			"invalid RLP encoding type for to address, %s",
@@ -184,11 +199,15 @@ func (tx *TxLegacy) FromRLP(txPayload []byte) error {
 		)
 	}
 
-	if toRaw := listValues[3].GetValue(); toRaw != nil {
-		to, _ := toRaw.([]byte)
-		address := BytesToAddress(to)
+	toRaw, ok := listValues[3].GetValue().([]byte)
+	if !ok || (len(toRaw) != 0 && len(toRaw) != addressSize) {
+		return ErrInvalidRLPTo
+	}
 
-		tx.To = &address
+	if len(toRaw) != 0 {
+		address := BytesToAddress(toRaw)
+
+		d.To = &address
 	}
 
 	// Decode the value
@@ -200,11 +219,11 @@ func (tx *TxLegacy) FromRLP(txPayload []byte) error {
 	}
 
 	valueRaw, ok := listValues[4].GetValue().([]byte)
-	if !ok || valueRaw == nil {
+	if !ok || len(valueRaw) > 32 || (len(valueRaw) > 0 && valueRaw[0] == 0) {
 		return ErrInvalidRLPValue
 	}
 
-	tx.Value = big.NewInt(0).SetBytes(valueRaw)
+	d.Value = big.NewInt(0).SetBytes(valueRaw)
 
 	// Decode the data
 	if listValues[5].GetType() != ethrlp.Bytes {
@@ -219,7 +238,7 @@ func (tx *TxLegacy) FromRLP(txPayload []byte) error {
 		return ErrInvalidRLPData
 	}
 
-	tx.Data = dataRaw
+	d.Data = dataRaw
 
 	// Decode the v sig param
 	if listValues[6].GetType() != ethrlp.Bytes {
@@ -230,11 +249,11 @@ func (tx *TxLegacy) FromRLP(txPayload []byte) error {
 	}
 
 	vRaw, ok := listValues[6].GetValue().([]byte)
-	if !ok || vRaw == nil {
+	if !ok || len(vRaw) > 32 || (len(vRaw) > 0 && vRaw[0] == 0) {
 		return ErrInvalidRLPVParam
 	}
 
-	tx.V = big.NewInt(0).SetBytes(vRaw)
+	d.V = big.NewInt(0).SetBytes(vRaw)
 
 	// Decode the r sig param
 	if listValues[7].GetType() != ethrlp.Bytes {
@@ -245,11 +264,11 @@ func (tx *TxLegacy) FromRLP(txPayload []byte) error {
 	}
 
 	rRaw, ok := listValues[7].GetValue().([]byte)
-	if !ok || rRaw == nil {
+	if !ok || len(rRaw) > 32 || (len(rRaw) > 0 && rRaw[0] == 0) {
 		return ErrInvalidRLPRParam
 	}
 
-	tx.R = big.NewInt(0).SetBytes(rRaw)
+	d.R = big.NewInt(0).SetBytes(rRaw)
 
 	// Decode the s sig param
 	if listValues[8].GetType() != ethrlp.Bytes {
@@ -260,11 +279,13 @@ func (tx *TxLegacy) FromRLP(txPayload []byte) error {
 	}
 
 	sRaw, ok := listValues[8].GetValue().([]byte)
-	if !ok || sRaw == nil {
+	if !ok || len(sRaw) > 32 || (len(sRaw) > 0 && sRaw[0] == 0) {
 		return ErrInvalidRLPSParam
 	}
 
-	tx.S = big.NewInt(0).SetBytes(sRaw)
+	d.S = big.NewInt(0).SetBytes(sRaw)
+
+	*tx = d
 
 	return nil
 }
@@ -365,6 +386,32 @@ func (tx *TxLegacy) ToProto() *txProto.Transaction {
 	}
 
 	return pb
+}
+
+// ToSignedRLP encodes the signed legacy transaction using RLP encoding.
+//
+// rlp([nonce, gasPrice, gas, to, value, data, v, r, s])
+func (tx *TxLegacy) ToSignedRLP() []byte {
+	var to []byte
+	if tx.To != nil {
+		to = tx.To.ToBytes()
+	}
+
+	// Construct the RLP data
+	rlpPayload := [][]byte{
+		ethrlp.EncodeUint(tx.Nonce),
+		ethrlp.EncodeBytes(bigToBytes(tx.GasPrice)),
+		ethrlp.EncodeUint(tx.Gas),
+		ethrlp.EncodeBytes(to),
+		ethrlp.EncodeBytes(bigToBytes(tx.Value)),
+		ethrlp.EncodeBytes(tx.Data),
+		ethrlp.EncodeBytes(bigToBytes(tx.V)),
+		ethrlp.EncodeBytes(bigToBytes(tx.R)),
+		ethrlp.EncodeBytes(bigToBytes(tx.S)),
+	}
+
+	// Perform the RLP encoding of the payload
+	return ethrlp.EncodeArray(rlpPayload)
 }
 
 // ToRLP encodes the legacy transaction using RLP encoding.

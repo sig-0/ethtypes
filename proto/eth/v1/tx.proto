@@ -22,6 +22,8 @@ message Transaction {
     Legacy legacy = 11;     // Legacy (pre-EIP-1559) transaction details
     EIP1559 eip1559 = 12;   // EIP-1559 transaction details with dynamic fees
     EIP2930 eip2930 = 13;   // EIP-2930 transaction details with access lists
+    EIP7702 eip7702 = 14;   // EIP-7702 transaction details with authorization lists
+    EIP4844 eip4844 = 15;   // EIP-4844 transaction details with blobs
   }
 }
 
@@ -51,13 +53,42 @@ message AccessListEntry {
   repeated bytes storage_keys = 2;  // Storage keys within the contract to access
 }
 
+// Additional fields for an EIP-4844 transaction
+message EIP4844 {
+  bytes max_priority_fee_per_gas = 1;       // Maximum tip a user is willing to pay to the block creator
+  bytes max_fee_per_gas = 2;                // Maximum total fee per gas unit
+  repeated AccessListEntry access_list = 3; // List of contract addresses and storage keys accessed
+  bytes chain_id = 4;                       // The chain ID of the transaction, if any
+  bytes max_fee_per_blob_gas = 5;           // Maximum total fee per blob gas unit
+  repeated bytes blob_versioned_hashes = 6; // Versioned hashes of the blobs carried by the transaction
+}
+
+// Additional fields for an EIP-7702 transaction
+message EIP7702 {
+  bytes max_priority_fee_per_gas = 1;            // Maximum tip a user is willing to pay to the block creator
+  bytes max_fee_per_gas = 2;                     // Maximum total fee per gas unit
+  repeated AccessListEntry access_list = 3;      // List of contract addresses and storage keys accessed
+  bytes chain_id = 4;                            // The chain ID of the transaction, if any
+  repeated Authorization authorization_list = 5; // List of signed code delegations
+}
+
+// Represents an entry in an authorization list
+message Authorization {
+  bytes chain_id = 1;   // The chain ID of the authorization (0 for any chain)
+  bytes address = 2;    // Address of the delegated code
+  uint64 nonce = 3;     // Nonce of the signer account
+  bytes y_parity = 4;   // ECDSA signature component 'y parity'
+  bytes r = 5;          // ECDSA signature component 'r'
+  bytes s = 6;          // ECDSA signature component 's'
+}
+
 // Represents a standard "call" transaction object, usually
 // as a result of eth_call, eth_estimateGas and others.
 //
 // This is NOT the same transaction format as with signed transactions,
 // seen in eth_sendRawTransaction, which follow a stricter standard.
 // The users of this type will need to "guess" the transaction type,
-// whether it's Legacy, EIP-1559, EIP-2930, or others, based on the set fields
+// whether it's Legacy, EIP-1559, EIP-2930, EIP-4844, EIP-7702, or others, based on the set fields
 message CallTx {
   bytes to = 1;                        // destination address (required)
   bytes from = 2;                      // tx originator
@@ -71,5 +102,7 @@ message CallTx {
     Legacy legacy = 8;     // Legacy (pre-EIP-1559) transaction details
     EIP1559 eip1559 = 9;   // EIP-1559 transaction details with dynamic fees
     EIP2930 eip2930 = 10;   // EIP-2930 transaction details with access lists
+    EIP4844 eip4844 = 11;   // EIP-4844 transaction details with blobs
+    EIP7702 eip7702 = 12;   // EIP-7702 transaction details with authorization lists
   }
 }

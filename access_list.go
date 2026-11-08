@@ -23,41 +23,43 @@ func (l *AccessList) FromRLP(data []byte) error {
 	// Decode the RLP data
 	list, err := ethrlp.DecodeBytes(data)
 	if err != nil {
-		return fmt.Errorf("failed to decode access list RLP data: %w", err)
+		return fmt.Errorf("%w: %w", ErrInvalidRLPAccessList, err)
 	}
 
 	if list.GetType() != ethrlp.List {
-		return fmt.Errorf("invalid access list RLP encoding type: %s", list.GetType())
+		return fmt.Errorf("%w: invalid RLP encoding type: %s", ErrInvalidRLPAccessList, list.GetType())
 	}
 
-	listValues, ok := list.GetValue().([]ethrlp.Value)
-	if !ok {
-		return fmt.Errorf("invalid access list RLP encoding type: %s", list.GetValue())
+	listValues, _ := list.GetValue().([]ethrlp.Value)
+
+	if err = l.FromRLPValues(listValues); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidRLPAccessList, err)
 	}
 
-	return l.FromRLPValues(listValues)
+	return nil
 }
 
 // FromRLPValues parses the raw RLP values of an access list
 func (l *AccessList) FromRLPValues(listValues []ethrlp.Value) error {
+	entries := make(AccessList, 0, len(listValues))
+
 	for _, entryRaw := range listValues {
-		if entryRaw.GetType() != ethrlp.Bytes {
+		if entryRaw.GetType() != ethrlp.List {
 			return errors.New("invalid access list entry RLP encoding")
 		}
 
-		entry, ok := entryRaw.GetValue().([]byte)
-		if !ok || entry == nil {
-			return errors.New("invalid access list entry RLP encoding")
-		}
+		entryValues, _ := entryRaw.GetValue().([]ethrlp.Value)
 
 		var acEntry AccessListEntry
 
-		if err := acEntry.FromRLP(entry); err != nil {
+		if err := acEntry.fromRLPValues(entryValues); err != nil {
 			return fmt.Errorf("invalid access list entry RLP encoding: %w", err)
 		}
 
-		*l = append(*l, acEntry)
+		entries = append(entries, acEntry)
 	}
+
+	*l = entries
 
 	return nil
 }
@@ -110,14 +112,27 @@ func (e *AccessListEntry) FromRLP(data []byte) error {
 	// Decode the RLP data
 	list, err := ethrlp.DecodeBytes(data)
 	if err != nil {
-		return fmt.Errorf("failed to decode access list RLP data: %w", err)
+		return fmt.Errorf("%w: %w", ErrInvalidRLPAccessList, err)
 	}
 
 	if list.GetType() != ethrlp.List {
-		return fmt.Errorf("invalid access list RLP encoding type: %s", list.GetType())
+		return fmt.Errorf("%w: invalid RLP encoding type: %s", ErrInvalidRLPAccessList, list.GetType())
 	}
 
 	listValues, _ := list.GetValue().([]ethrlp.Value)
+
+	if err = e.fromRLPValues(listValues); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidRLPAccessList, err)
+	}
+
+	return nil
+}
+
+// fromRLPValues parses the raw RLP values of a single access list entry.
+// It expects the structure to be:
+//
+// [address, [storageKey, ...]] (2 elements)
+func (e *AccessListEntry) fromRLPValues(listValues []ethrlp.Value) error {
 	if len(listValues) != 2 {
 		return fmt.Errorf(
 			"invalid access list entry RLP encoding length: %d, expected %d",
@@ -135,11 +150,9 @@ func (e *AccessListEntry) FromRLP(data []byte) error {
 	}
 
 	addressRaw, ok := listValues[0].GetValue().([]byte)
-	if !ok || addressRaw == nil {
+	if !ok || len(addressRaw) != addressSize {
 		return errors.New("invalid address param RLP encoding")
 	}
-
-	e.Address = BytesToAddress(addressRaw)
 
 	// Decode the storage keys
 	if listValues[1].GetType() != ethrlp.List {
@@ -156,13 +169,14 @@ func (e *AccessListEntry) FromRLP(data []byte) error {
 
 	for _, storageKey := range storageKeysList {
 		storageKeyRaw, ok := storageKey.GetValue().([]byte)
-		if !ok || storageKeyRaw == nil {
+		if !ok || len(storageKeyRaw) != hashSize {
 			return errors.New("invalid storage key param RLP encoding")
 		}
 
 		storageKeys = append(storageKeys, BytesToHash(storageKeyRaw))
 	}
 
+	e.Address = BytesToAddress(addressRaw)
 	e.StorageKeys = storageKeys
 
 	return nil
@@ -206,7 +220,7 @@ func (e *AccessListEntry) FromProto(protoEntry *txProto.AccessListEntry) {
 	e.Address = BytesToAddress(protoEntry.GetAddress())
 	e.StorageKeys = make([]Hash, 0, len(protoEntry.GetStorageKeys()))
 
-	for _, storageKey := range protoEntry.StorageKeys {
+	for _, storageKey := range protoEntry.GetStorageKeys() {
 		e.StorageKeys = append(e.StorageKeys, BytesToHash(storageKey))
 	}
 }

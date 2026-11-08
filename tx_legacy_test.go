@@ -84,3 +84,31 @@ func TestComputeLegacyTxHash(t *testing.T) {
 		})
 	}
 }
+
+// Checks that malformed RLP inputs (which ethrlp v0.2.1 hung on,
+// panicked on or accepted) are rejected
+func TestTxLegacyFromRLPStrictEthrlp(t *testing.T) {
+	t.Parallel()
+
+	testTable := []struct {
+		wantErr error
+		name    string
+		input   []byte
+	}{
+		{name: "nil input", input: nil, wantErr: ethrlp.ErrInvalidLength},
+		{name: "empty input", input: []byte{}, wantErr: ethrlp.ErrInvalidLength},
+		{name: "v0.2.1 hang, long string", input: hexBytes(t, "c9bffffffffffffffff7"), wantErr: ethrlp.ErrInvalidLength},
+		{name: "v0.2.1 hang, long list", input: hexBytes(t, "c9fffffffffffffffff7"), wantErr: ethrlp.ErrInvalidLength},
+		{name: "v0.2.1 panic", input: hexBytes(t, "ff8f3030303030303030"), wantErr: ethrlp.ErrInvalidLength},
+		{name: "trailing byte after list", input: hexBytes(t, "c20102ff"), wantErr: ethrlp.ErrTrailingBytes},
+		{name: "non-canonical single byte", input: hexBytes(t, "c28101"), wantErr: ethrlp.ErrNonCanonical},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			assert.ErrorIs(t, (&TxLegacy{}).FromRLP(testCase.input), testCase.wantErr)
+		})
+	}
+}

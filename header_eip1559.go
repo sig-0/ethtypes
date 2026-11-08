@@ -1,6 +1,7 @@
 package ethtypes
 
 import (
+	"encoding/binary"
 	"errors"
 	"math/big"
 
@@ -111,6 +112,22 @@ func (h *HeaderEIP1559) getWithdrawalsRoot() Hash {
 	return ZeroStorageHash // no withdrawals root
 }
 
+func (h *HeaderEIP1559) getBlobGasUsed() uint64 {
+	return 0
+}
+
+func (h *HeaderEIP1559) getExcessBlobGas() uint64 {
+	return 0
+}
+
+func (h *HeaderEIP1559) getParentBeaconBlockRoot() Hash {
+	return ZeroHash
+}
+
+func (h *HeaderEIP1559) getRequestsHash() Hash {
+	return ZeroHash
+}
+
 // Hash constructs the EIP-1559 header hash.
 // The hash is the keccak of the header's RLP encoding
 func (h *HeaderEIP1559) Hash() Hash {
@@ -213,7 +230,7 @@ func (h *HeaderEIP1559) ToRLP() []byte {
 		ethrlp.EncodeInt(h.Timestamp),
 		ethrlp.EncodeBytes(h.ExtraData),
 		ethrlp.EncodeBytes(h.MixDigest.ToBytes()),
-		ethrlp.EncodeUint(h.Nonce),
+		ethrlp.EncodeBytes(binary.BigEndian.AppendUint64(nil, h.Nonce)), // the nonce is always 8 bytes
 		ethrlp.EncodeBigInt(h.BaseFeePerGas),
 	}
 

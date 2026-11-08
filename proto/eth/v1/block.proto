@@ -10,6 +10,8 @@ import "eth/v1/tx.proto";
 message Block {
   Header header = 1;                     // Associated block header
   repeated Transaction transactions = 2; // List of transactions included in the block
+  repeated Withdrawal withdrawals = 3;   // List of validator withdrawals included in the block
+  repeated Header uncles = 4;            // List of uncle headers included in the block
 }
 
 // Header contains common fields for all block headers, plus an optional payload for type-specific details
@@ -38,6 +40,12 @@ message Header {
 
     // Fields specific to an EIP-4895 block header
     EIP4895Payload eip4895 = 18;
+
+    // Fields specific to an EIP-4844 block header
+    EIP4844Payload eip4844 = 19;
+
+    // Fields specific to an EIP-7685 block header
+    EIP7685Payload eip7685 = 20;
   }
 }
 
@@ -54,6 +62,30 @@ message EIP1559Payload {
 message EIP4895Payload {
   bytes base_fee_per_gas = 1;   // Base fee per gas unit for EIP-1559 blocks
   bytes withdrawals_root = 2;   // Root of the withdrawals trie (for withdrawals from validators)
+}
+
+// EIP4844Payload contains blob gas and beacon block information relating to
+// Cancun hardfork blocks
+// https://eips.ethereum.org/EIPS/eip-4844
+// https://eips.ethereum.org/EIPS/eip-4788
+message EIP4844Payload {
+  bytes base_fee_per_gas = 1;         // Base fee per gas unit for EIP-1559 blocks
+  bytes withdrawals_root = 2;         // Root of the withdrawals trie (for withdrawals from validators)
+  uint64 blob_gas_used = 3;           // Total blob gas used by all transactions in the block
+  uint64 excess_blob_gas = 4;         // Excess blob gas, used to calculate the blob base fee
+  bytes parent_beacon_block_root = 5; // Root of the parent beacon block
+}
+
+// EIP7685Payload contains execution layer requests information relating to
+// Prague hardfork blocks
+// https://eips.ethereum.org/EIPS/eip-7685
+message EIP7685Payload {
+  bytes base_fee_per_gas = 1;         // Base fee per gas unit for EIP-1559 blocks
+  bytes withdrawals_root = 2;         // Root of the withdrawals trie (for withdrawals from validators)
+  uint64 blob_gas_used = 3;           // Total blob gas used by all transactions in the block
+  uint64 excess_blob_gas = 4;         // Excess blob gas, used to calculate the blob base fee
+  bytes parent_beacon_block_root = 5; // Root of the parent beacon block
+  bytes requests_hash = 6;            // Hash of the execution layer requests in the block
 }
 
 // Withdrawal is a withdrawal from a validator in Ethereum 2.0

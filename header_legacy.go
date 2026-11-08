@@ -1,6 +1,7 @@
 package ethtypes
 
 import (
+	"encoding/binary"
 	"errors"
 	"math/big"
 
@@ -108,6 +109,22 @@ func (h *HeaderLegacy) getWithdrawalsRoot() Hash {
 	return ZeroStorageHash // no withdrawals root
 }
 
+func (h *HeaderLegacy) getBlobGasUsed() uint64 {
+	return 0
+}
+
+func (h *HeaderLegacy) getExcessBlobGas() uint64 {
+	return 0
+}
+
+func (h *HeaderLegacy) getParentBeaconBlockRoot() Hash {
+	return ZeroHash
+}
+
+func (h *HeaderLegacy) getRequestsHash() Hash {
+	return ZeroHash
+}
+
 // Hash constructs the legacy header hash.
 // The hash is the keccak of the header's RLP encoding
 func (h *HeaderLegacy) Hash() Hash {
@@ -191,7 +208,7 @@ func (h *HeaderLegacy) ToRLP() []byte {
 		ethrlp.EncodeInt(h.Timestamp),
 		ethrlp.EncodeBytes(h.ExtraData),
 		ethrlp.EncodeBytes(h.MixDigest.ToBytes()),
-		ethrlp.EncodeUint(h.Nonce),
+		ethrlp.EncodeBytes(binary.BigEndian.AppendUint64(nil, h.Nonce)), // the nonce is always 8 bytes
 	}
 
 	// Perform the RLP encoding of the payload
